@@ -12,6 +12,12 @@ Chromium is and can be hungry; especially when refreshing a market page every fe
 
 Don't get me wrong; I have personally run into a few sellers trying to create a ripple in the market and undercutting users by a good 20% in plat. Well, you can ignore this fake offer after attempting to send a whisper and seeing they are not online. The app will get back to looking for the deal you are targeting for.
 
+## Preview
+
+![App Preview](Documentation/AppPreview.png)
+
+![Windows 11 Notification Example](Documentation/ExampleWin11Notification.png)
+
 ## What it does
 
 - **Track items by name** — search from the full [warframe.market](https://warframe.market) item catalog with autocomplete

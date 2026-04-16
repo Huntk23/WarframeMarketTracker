@@ -1,0 +1,99 @@
+<shadui:Window xmlns="https://github.com/avaloniaui"
+               xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+               xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+               xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+               xmlns:shadui="clr-namespace:ShadUI;assembly=ShadUI"
+               xmlns:local="clr-namespace:WarframeMarketTracker"
+               xmlns:vm="using:WarframeMarketTracker.ViewModels"
+               mc:Ignorable="d" d:DesignWidth="420" d:DesignHeight="520"
+               x:Class="WarframeMarketTracker.Views.AboutWindow"
+               x:DataType="vm:AboutWindowViewModel"
+               Title="About"
+               WindowStartupLocation="CenterOwner"
+               CanResize="False"
+               CanMinimize="False"
+               CanMaximize="False"
+               ShowInTaskbar="False"
+               Width="420" Height="520">
+
+    <ScrollViewer Margin="24,24,0,24" Padding="0,0,24,0">
+        <StackPanel Spacing="16">
+
+            <!-- App Name & Version -->
+            <TextBlock Text="{x:Static local:Program.AppName}"
+                       FontSize="20" FontWeight="Bold"
+                       HorizontalAlignment="Center" />
+            <TextBlock Text="{x:Static local:BuildInfo.AppVersion}"
+                       FontSize="13"
+                       Foreground="{DynamicResource MutedForegroundColor}"
+                       HorizontalAlignment="Center"
+                       Margin="0,-12,0,0" />
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="6" Margin="0,-10,0,0">
+                <shadui:Loading Width="12" Height="12"
+                                VerticalAlignment="Center"
+                                IsVisible="{Binding IsChecking}" />
+                <!-- Shown while checking or when up to date / error -->
+                <TextBlock Text="{Binding VersionStatus}"
+                           FontSize="12"
+                           Foreground="{DynamicResource MutedForegroundColor}"
+                           FontStyle="Italic"
+                           VerticalAlignment="Center"
+                           IsVisible="{Binding !HasUpdate}" />
+                <!-- Shown when a new version is available, as a clickable link -->
+                <TextBlock FontSize="12" FontStyle="Italic" VerticalAlignment="Center"
+                           IsVisible="{Binding HasUpdate}">
+                    <Run Text="New version available: " Foreground="{DynamicResource MutedForegroundColor}" />
+                    <HyperlinkButton Content="{Binding LatestVersion}"
+                                     Command="{Binding OpenUrlCommand}"
+                                     CommandParameter="{Binding ReleaseUrl}"
+                                     Padding="0" FontSize="12" FontStyle="Italic" />
+                </TextBlock>
+            </StackPanel>
+
+            <Separator />
+
+            <!-- Developer -->
+            <StackPanel Spacing="4">
+                <TextBlock Text="Developer" FontWeight="SemiBold" />
+                <TextBlock Text="Huntk23" Foreground="{DynamicResource MutedForegroundColor}" />
+            </StackPanel>
+
+            <!-- Source -->
+            <StackPanel Spacing="4">
+                <TextBlock Text="Source Code" FontWeight="SemiBold" />
+                <HyperlinkButton Content="{x:Static vm:AboutWindowViewModel.RepositoryUrl}"
+                                 Command="{Binding OpenUrlCommand}"
+                                 CommandParameter="{x:Static vm:AboutWindowViewModel.RepositoryUrl}"
+                                 Padding="0" />
+            </StackPanel>
+
+            <Separator />
+
+            <!-- Package Table -->
+            <TextBlock Text="Open Source Libraries" FontWeight="SemiBold" />
+
+            <!-- Header Row -->
+            <Grid ColumnDefinitions="*, Auto">
+                <TextBlock Grid.Column="0" Text="Package" FontWeight="Medium"
+                           Foreground="{DynamicResource MutedForegroundColor}" FontSize="12" />
+                <TextBlock Grid.Column="1" Text="Version" FontWeight="Medium"
+                           Foreground="{DynamicResource MutedForegroundColor}" FontSize="12" />
+            </Grid>
+
+            <Separator Margin="0,-8,0,-8" />
+
+            <ItemsControl ItemsSource="{x:Static local:BuildInfo.Packages}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="local:PackageInfo">
+                        <Grid ColumnDefinitions="*, Auto" Margin="0,3">
+                            <TextBlock Grid.Column="0" Text="{Binding Name}" FontSize="13" />
+                            <TextBlock Grid.Column="1" Text="{Binding Version}" FontSize="13"
+                                       Foreground="{DynamicResource MutedForegroundColor}" />
+                        </Grid>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+        </StackPanel>
+    </ScrollViewer>
+</shadui:Window>

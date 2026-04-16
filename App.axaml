@@ -1,0 +1,12 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:shadui="clr-namespace:ShadUI;assembly=ShadUI"
+             x:Class="WarframeMarketTracker.App"
+             RequestedThemeVariant="Default">
+
+    <Application.Styles>
+        <shadui:ShadTheme />
+
+        <StyleInclude Source="avares://WarframeMarketTracker/Styles.axaml"></StyleInclude>
+    </Application.Styles>
+</Application>

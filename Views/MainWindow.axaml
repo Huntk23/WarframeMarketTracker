@@ -1,0 +1,114 @@
+<shadui:Window xmlns="https://github.com/avaloniaui"
+               xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+               xmlns:vm="using:WarframeMarketTracker.ViewModels"
+               xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+               xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+               xmlns:shadui="clr-namespace:ShadUI;assembly=ShadUI"
+               xmlns:local="clr-namespace:WarframeMarketTracker"
+               xmlns:conv="using:WarframeMarketTracker.Converters"
+               xmlns:assets="using:WarframeMarketTracker.Assets"
+               mc:Ignorable="d" d:DesignWidth="750" d:DesignHeight="500"
+               x:Class="WarframeMarketTracker.Views.MainWindow"
+               x:DataType="vm:MainWindowViewModel"
+               Icon="/Assets/wmt-logo.ico"
+               Title="{x:Static local:Program.AppName}"
+               Width="750" Height="500"
+               CanMaximize="False"
+               CanMinimize="False">
+
+    <shadui:Window.Resources>
+        <conv:ValidityToTagConverter x:Key="ValidityToTagConverter" />
+    </shadui:Window.Resources>
+    <shadui:Window.Styles>
+        <Style Selector="Border.Card">
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="BorderBrush" Duration="0:0:0.2" />
+                </Transitions>
+            </Setter>
+        </Style>
+
+        <Style Selector="Border.Card[Tag=Invalid]">
+            <Setter Property="BorderBrush" Value="#ef4444" /> <Setter Property="BorderThickness" Value="2" />
+        </Style>
+    </shadui:Window.Styles>
+
+    <shadui:Window.LogoContent>
+        <PathIcon
+            Data="{x:Static shadui:Icons.Logo}"
+            Height="14"
+            Margin="8,8,0,8"
+            Width="14" />
+    </shadui:Window.LogoContent>
+
+    <shadui:Window.RightWindowTitleBarContent>
+        <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button
+                Command="{Binding OpenAboutCommand}"
+                Background="{DynamicResource SidebarBackgroundColor}"
+                CornerRadius="{DynamicResource MdCornerRadius}"
+                Height="30"
+                Width="30">
+                <PathIcon
+                    Data="{x:Static assets:Icons.Help}"
+                    Width="16"
+                    Height="16"
+                    Foreground="{Binding $parent[Button].Foreground}" />
+            </Button>
+        </StackPanel>
+    </shadui:Window.RightWindowTitleBarContent>
+
+    <Grid RowDefinitions="Auto, *, Auto" Margin="12">
+        <ScrollViewer Grid.Row="1" Margin="0,0,-10,0" Padding="0,0,12,0">
+            <ItemsControl ItemsSource="{Binding TrackedItems}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:TrackedItemViewModel">
+                        <Border Classes="Card" Margin="0,0,0,10" Padding="15" Tag="{Binding IsValid, Converter={StaticResource ValidityToTagConverter}}">
+                            <Grid ColumnDefinitions="*, Auto, 170, Auto, Auto">
+
+                                <AutoCompleteBox Grid.Column="0"
+                                                 Text="{Binding ItemName, Mode=TwoWay}"
+                                                 ItemsSource="{Binding $parent[shadui:Window].((vm:MainWindowViewModel)DataContext).AvailableItemNames}"
+                                                 Watermark="e.g. Nova Prime Set"
+                                                 FilterMode="Contains"
+                                                 LostFocus="AutoCompleteBox_OnLostFocus"
+                                                 Margin="0,0,15,0" />
+
+                                <NumericUpDown Grid.Column="1"
+                                               Value="{Binding TargetRank}"
+                                               Minimum="0"
+                                               Maximum="{Binding MaxRank}"
+                                               FormatString="'R' 0"
+                                               IsVisible="{Binding HasRanks}"
+                                               MinWidth="130"
+                                               Margin="0,0,15,0" />
+
+                                <NumericUpDown Grid.Column="2"
+                                               Value="{Binding TargetPlatinum}"
+                                               Minimum="1"
+                                               FormatString="0 'p'"
+                                               Margin="0,0,15,0" />
+
+                                <ToggleSwitch Grid.Column="3"
+                                              IsChecked="{Binding IsEnabled}"
+                                              Margin="0,0,15,0" />
+
+                                <Button Grid.Column="4"
+                                        Command="{Binding RemoveCommand}"
+                                        Classes="Destructive Outline"
+                                        Content="✕" />
+                            </Grid>
+                        </Border>
+
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="10" Margin="0,20,0,0">
+            <Button Content="Add New Item"
+                    Command="{Binding AddRowCommand}"
+                    Classes="Outline" />
+        </StackPanel>
+    </Grid>
+</shadui:Window>

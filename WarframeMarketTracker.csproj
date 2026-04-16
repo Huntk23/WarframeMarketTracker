@@ -1,0 +1,71 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <OutputType>WinExe</OutputType>
+        <TargetFramework>net10.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ApplicationManifest>app.manifest</ApplicationManifest>
+        <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+        <Version>1.0.0</Version>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <AvaloniaResource Include="Assets\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Content Include="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Avalonia" Version="11.3.14" />
+        <PackageReference Include="Avalonia.Desktop" Version="11.3.14" />
+        <PackageReference Include="Avalonia.Labs.Notifications" Version="11.3.1" />
+        <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.14" />
+        <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.14" />
+        <PackageReference Include="AvaloniaUI.DiagnosticsSupport" Version="2.2.0">
+            <IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
+            <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
+        </PackageReference>
+        <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.1" />
+        <PackageReference Include="Microsoft.Extensions.Hosting" Version="11.0.0-preview.2.26159.112" />
+        <PackageReference Include="Microsoft.Extensions.Http" Version="11.0.0-preview.2.26159.112" />
+        <PackageReference Include="Serilog" Version="4.3.1" />
+        <PackageReference Include="Serilog.Extensions.Hosting" Version="10.0.0" />
+        <PackageReference Include="Serilog.Settings.Configuration" Version="10.0.0" />
+        <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
+        <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
+        <PackageReference Include="ShadUI" Version="0.1.6" />
+    </ItemGroup>
+    <!-- Auto-generate PackageVersions.g.cs from PackageReference items at build time -->
+    <Target Name="GeneratePackageVersions" BeforeTargets="CoreCompile;DesignTimeBuild">
+        <PropertyGroup>
+            <_PkgFile>$(IntermediateOutputPath)PackageVersions.g.cs</_PkgFile>
+        </PropertyGroup>
+        <ItemGroup>
+            <_PkgLine Include="$([System.String]::Format('        new PackageInfo(&quot;{0}&quot;, &quot;{1}&quot;),', %(PackageReference.Identity), %(PackageReference.Version)))" Condition="'%(PackageReference.Version)' != ''" />
+        </ItemGroup>
+        <PropertyGroup>
+            <_PkgLines>@(_PkgLine, '
+')</_PkgLines>
+            <_PkgSource>// &lt;auto-generated/&gt;
+                namespace WarframeMarketTracker%3B
+
+                public record PackageInfo(string Name, string Version)%3B
+
+                public static class BuildInfo
+                {
+                public const string AppVersion = "$(Version)"%3B
+
+                public static readonly PackageInfo[] Packages =
+                [
+                $(_PkgLines)
+                ]%3B
+                }
+            </_PkgSource>
+        </PropertyGroup>
+        <WriteLinesToFile File="$(_PkgFile)" Lines="$(_PkgSource)" Overwrite="true" />
+        <ItemGroup>
+            <Compile Include="$(_PkgFile)" Condition="!@(Compile-&gt;AnyHaveMetadataValue('Identity', '$(_PkgFile)'))" />
+        </ItemGroup>
+    </Target>
+</Project>

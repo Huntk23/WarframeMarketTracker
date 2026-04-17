@@ -1,0 +1,44 @@
+name: Framework-Dependent Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup .NET 10
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
+
+    - name: Publish (Win-x64)
+      # --self-contained false: Requires user to have .NET 10 Runtime
+      # PublishSingleFile=false: Keeps files separate, preventing %TEMP% extraction
+      run: >
+        dotnet publish WarframeMarketTracker.csproj 
+        -c Release 
+        -r win-x64 
+        --self-contained false 
+        -p:PublishSingleFile=false 
+        -p:PublishReadyToRun=true 
+        -o ./publish
+
+    - name: Zip Release Folder
+      shell: pwsh
+      run: Compress-Archive -Path ./publish/* -DestinationPath ./WarframeMarketTracker_Win64_Portable.zip
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: WarframeMarketTracker_Win64_Portable.zip
+        name: Version ${{ github.ref_name }}
+        body: "Windows 11+ (Requires .NET 10 Runtime)"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

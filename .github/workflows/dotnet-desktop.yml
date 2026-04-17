@@ -1,4 +1,4 @@
-name: Framework-Dependent Release
+name: Multi-Platform Release
 
 on:
   push:
@@ -10,7 +10,18 @@ permissions:
 
 jobs:
   build:
-    runs-on: windows-latest
+    strategy:
+      matrix:
+        # Define the target platforms
+        include:
+          - os: windows-latest
+            rid: win-x64
+            suffix: Win64
+          - os: ubuntu-latest
+            rid: linux-x64
+            suffix: Linux-x64
+
+    runs-on: ${{ matrix.os }}
 
     steps:
     - name: Checkout
@@ -21,27 +32,37 @@ jobs:
       with:
         dotnet-version: '10.0.x'
 
-    - name: Publish (Win-x64)
-      # --self-contained false: Requires user to have .NET 10 Runtime
-      # PublishSingleFile=false: Keeps files separate, preventing %TEMP% extraction
+    - name: Publish
+      # We enable ReadyToRun only on the native OS for that RID
       run: >
         dotnet publish WarframeMarketTracker.csproj 
         -c Release 
-        -r win-x64 
+        -r ${{ matrix.rid }} 
         --self-contained false 
         -p:PublishSingleFile=false 
         -p:PublishReadyToRun=true 
-        -o ./publish
+        -o ./publish-${{ matrix.rid }}
 
-    - name: Zip Release Folder
+    - name: Zip Release Folder (Windows)
+      if: matrix.os == 'windows-latest'
       shell: pwsh
-      run: Compress-Archive -Path ./publish/* -DestinationPath ./WarframeMarketTracker_Win64_Portable.zip
+      run: Compress-Archive -Path ./publish-${{ matrix.rid }}/* -DestinationPath ./WarframeMarketTracker_${{ matrix.suffix }}.zip
+
+    - name: Tar Release Folder (Linux)
+      if: matrix.os == 'ubuntu-latest'
+      run: tar -czvf WarframeMarketTracker_${{ matrix.suffix }}.tar.gz -C ./publish-${{ matrix.rid }} .
 
     - name: Create Release
       uses: softprops/action-gh-release@v2
       with:
-        files: WarframeMarketTracker_Win64_Portable.zip
+        files: |
+          WarframeMarketTracker_Win64.zip
+          WarframeMarketTracker_Linux-x64.tar.gz
         name: Version ${{ github.ref_name }}
-        body: "Windows 11+ (Requires .NET 10 Runtime)"
+        body: |
+          Multi-platform build for Version ${{ github.ref_name }}
+          Requires .NET 10 Runtime installed on the host system.
+        # This 'append_body' ensures parallel jobs don't overwrite each other
+        append_body: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

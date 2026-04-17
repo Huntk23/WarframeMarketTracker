@@ -33,6 +33,16 @@ Don't get me wrong; I have personally run into a few sellers trying to create a 
 
 Every 15 seconds, the app checks the Warframe Market API for the lowest sell order on each item you're tracking. It only looks at sellers who are currently in-game (so you're not chasing offline ghosts). If the price is at or below your target, you get a toast notification. It won't spam you — it only re-notifies when the price drops *lower* than what it already told you about.
 
+## Limitation
+
+At the moment if the notification get's automatically dismissed to the action/notification center, it will no longer be able to respond to actions. I believe this is a current implementation limit with the framework I am using. In the mean time, I am considering putting a status label under each item.
+
+## Notification Timeout
+
+- **Windows 11**: Settings > Accessibillity > Visual effects > Dismiss notifications after this amount of time {drop down}
+- **Linux**
+  - **KDE Plasma**: System settings > Personalization > Notifications > Hide popup after {drop down}
+
 ## Building from source
 
 Requires [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0).

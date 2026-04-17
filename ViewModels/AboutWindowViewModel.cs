@@ -44,7 +44,7 @@ public partial class AboutWindowViewModel : ViewModelBase
         try
         {
             // Run the API call and a minimum display delay in parallel
-            var delayTask = Task.Delay(TimeSpan.FromSeconds(5));
+            var delayTask = Task.Delay(TimeSpan.FromSeconds(3));
             var fetchTask = _client.GetFromJsonAsync<GitHubRelease>(
                 $"repos/{GitHubOwner}/{GitHubRepo}/releases/latest");
 

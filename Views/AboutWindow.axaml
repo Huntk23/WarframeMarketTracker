@@ -40,14 +40,18 @@
                            VerticalAlignment="Center"
                            IsVisible="{Binding !HasUpdate}" />
                 <!-- Shown when a new version is available, as a clickable link -->
-                <TextBlock FontSize="12" FontStyle="Italic" VerticalAlignment="Center"
-                           IsVisible="{Binding HasUpdate}">
-                    <Run Text="New version available: " Foreground="{DynamicResource MutedForegroundColor}" />
-                    <HyperlinkButton Content="{Binding LatestVersion}"
-                                     Command="{Binding OpenUrlCommand}"
-                                     CommandParameter="{Binding ReleaseUrl}"
-                                     Padding="0" FontSize="12" FontStyle="Italic" />
-                </TextBlock>
+                <TextBlock Text="New version available: "
+                           FontSize="12" FontStyle="Italic"
+                           Foreground="{DynamicResource MutedForegroundColor}"
+                           VerticalAlignment="Center"
+                           IsVisible="{Binding HasUpdate}" />
+                <HyperlinkButton Content="{Binding LatestVersion}"
+                                 Command="{Binding OpenUrlCommand}"
+                                 CommandParameter="{Binding ReleaseUrl}"
+                                 Padding="0" Margin="0" MinHeight="0"
+                                 VerticalAlignment="Center"
+                                 FontSize="12" FontStyle="Italic"
+                                 IsVisible="{Binding HasUpdate}" />
             </StackPanel>
 
             <Separator />

@@ -53,19 +53,13 @@ cd WarframeMarketTracker
 dotnet run
 ```
 
-To publish a self-contained executable:
-
-```
-dotnet publish -c Release -r win-x64 --self-contained
-```
-
 ## Tech stack
 
 - [Avalonia UI](https://avaloniaui.net/) with [ShadUI](https://github.com/anthropics/ShadUI) theming
 - [CommunityToolkit.Mvvm](https://learn.microsoft.com/en-us/dotnet/communitytoolkit/mvvm/) for MVVM plumbing
 - [Microsoft.Extensions.Hosting](https://learn.microsoft.com/en-us/dotnet/core/extensions/generic-host) for DI and background services
 - [Serilog](https://serilog.net/) for structured logging
-- [Avalonia.Labs.Notifications](https://github.com/AvaloniaUI/Avalonia.Labs) for native Windows toast notifications
+- [Avalonia.Labs.Notifications](https://github.com/AvaloniaUI/Avalonia.Labs) for native cross platform toast notifications
 - C# 14 / .NET 10
 
 ## License

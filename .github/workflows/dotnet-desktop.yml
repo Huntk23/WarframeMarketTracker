@@ -22,7 +22,7 @@ jobs:
       # --self-contained false: Requires user to have .NET 10 Runtime
       # PublishSingleFile=false: Keeps files separate, preventing %TEMP% extraction
       run: >
-        dotnet publish WarframeMarketTracker/WarframeMarketTracker.csproj 
+        dotnet publish WarframeMarketTracker.csproj 
         -c Release 
         -r win-x64 
         --self-contained false 

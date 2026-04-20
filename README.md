@@ -37,9 +37,10 @@ Every 15 seconds, the app checks the Warframe Market API for the lowest sell ord
 
 At the moment if the notification get's automatically dismissed to the action/notification center, it will no longer be able to respond to actions. I believe this is a current implementation limit with the framework I am using. In the mean time, I am considering putting a status label under each item.
 
-## Notification Timeout
+## OS Notification Settings
 
 - **Windows 11**: Settings > Accessibillity > Visual effects > Dismiss notifications after this amount of time {drop down}
+  - Turn off Do Not Disturb settings to allow the pop-up to overlay the game.
 - **Linux**
   - **KDE Plasma**: System settings > Personalization > Notifications > Hide popup after {drop down}
 

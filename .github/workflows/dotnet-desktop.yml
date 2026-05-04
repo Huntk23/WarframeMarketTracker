@@ -52,17 +52,29 @@ jobs:
       if: matrix.os == 'ubuntu-latest'
       run: tar -czvf WarframeMarketTracker_${{ matrix.suffix }}.tar.gz -C ./publish-${{ matrix.rid }} .
 
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.suffix }}
+        path: WarframeMarketTracker_${{ matrix.suffix }}.*
+        retention-days: 1
+
+  upload:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+
     - name: Create Release
       uses: softprops/action-gh-release@v2
       with:
         files: |
-          WarframeMarketTracker_Win64.zip
-          WarframeMarketTracker_Linux-x64.tar.gz
+          Win64/WarframeMarketTracker_Win64.zip
+          Linux-x64/WarframeMarketTracker_Linux-x64.tar.gz
         name: Version ${{ github.ref_name }}
         body: |
           Multi-platform build for Version ${{ github.ref_name }}
           Requires .NET 10 Runtime installed on the host system.
-        # This 'append_body' ensures parallel jobs don't overwrite each other
-        append_body: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,12 +1,10 @@
 using System;
-using System.Diagnostics;
 using System.Net.Http;
 using System.Net.Http.Json;
-using System.Runtime.InteropServices;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.Logging;
 
 namespace WarframeMarketTracker.ViewModels;
 
@@ -16,6 +14,7 @@ public partial class AboutWindowViewModel : ViewModelBase
     private const string GitHubRepo = "WarframeMarketTracker";
 
     private readonly HttpClient _client;
+    private readonly ILogger<AboutWindowViewModel> _logger;
 
     [ObservableProperty]
     public partial bool IsChecking { get; set; } = true;
@@ -32,11 +31,12 @@ public partial class AboutWindowViewModel : ViewModelBase
     [ObservableProperty]
     public partial string? LatestVersion { get; set; }
 
-    public static string RepositoryUrl => $"https://github.com/{GitHubOwner}/{GitHubRepo}";
+    public static Uri RepositoryUrl => new($"https://github.com/{GitHubOwner}/{GitHubRepo}");
 
-    public AboutWindowViewModel(IHttpClientFactory httpClientFactory)
+    public AboutWindowViewModel(IHttpClientFactory httpClientFactory, ILogger<AboutWindowViewModel> logger)
     {
         _client = httpClientFactory.CreateClient("GitHub");
+        _logger = logger;
     }
 
     public async Task CheckForUpdateAsync()
@@ -50,7 +50,7 @@ public partial class AboutWindowViewModel : ViewModelBase
 
             await Task.WhenAll(delayTask, fetchTask);
 
-            var release = fetchTask.Result;
+            var release = await fetchTask;
 
             if (release?.TagName == null)
             {
@@ -75,25 +75,15 @@ public partial class AboutWindowViewModel : ViewModelBase
                 }
             }
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogWarning(ex, "Update check failed");
             VersionStatus = "Could not check for updates.";
         }
         finally
         {
             IsChecking = false;
         }
-    }
-
-    [RelayCommand]
-    private static void OpenUrl(string url)
-    {
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
-        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-            Process.Start("xdg-open", url);
-        else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-            Process.Start("open", url);
     }
 
     private record GitHubRelease(

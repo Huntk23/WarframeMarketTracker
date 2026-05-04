@@ -63,43 +63,72 @@
             <ItemsControl ItemsSource="{Binding TrackedItems}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="vm:TrackedItemViewModel">
-                        <Border Classes="Card" Margin="0,0,0,10" Padding="15" Tag="{Binding IsValid, Converter={StaticResource ValidityToTagConverter}}">
-                            <Grid ColumnDefinitions="*, Auto, 170, Auto, Auto">
-
-                                <AutoCompleteBox Grid.Column="0"
-                                                 Text="{Binding ItemName, Mode=TwoWay}"
-                                                 ItemsSource="{Binding $parent[shadui:Window].((vm:MainWindowViewModel)DataContext).AvailableItemNames}"
-                                                 Watermark="e.g. Nova Prime Set"
-                                                 FilterMode="Contains"
-                                                 LostFocus="AutoCompleteBox_OnLostFocus"
-                                                 Margin="0,0,15,0" />
-
-                                <NumericUpDown Grid.Column="1"
-                                               Value="{Binding TargetRank}"
-                                               Minimum="0"
-                                               Maximum="{Binding MaxRank}"
-                                               FormatString="'R' 0"
-                                               IsVisible="{Binding HasRanks}"
-                                               MinWidth="130"
-                                               Margin="0,0,15,0" />
-
-                                <NumericUpDown Grid.Column="2"
-                                               Value="{Binding TargetPlatinum}"
-                                               Minimum="1"
-                                               FormatString="0 'p'"
-                                               Margin="0,0,15,0" />
-
-                                <ToggleSwitch Grid.Column="3"
-                                              IsChecked="{Binding IsEnabled}"
-                                              Margin="0,0,15,0" />
-
-                                <Button Grid.Column="4"
-                                        Command="{Binding RemoveCommand}"
-                                        Classes="Destructive Outline"
-                                        Content="✕" />
-                            </Grid>
+                        <Border Classes="Card" Margin="0,0,0,6" Padding="10" Tag="{Binding IsValid, Converter={StaticResource ValidityToTagConverter}}">
+                            <StackPanel Spacing="4">
+                                <Grid ColumnDefinitions="*, Auto, 170, Auto, Auto">
+                                    <AutoCompleteBox Grid.Column="0"
+                                                     Text="{Binding ItemName, Mode=TwoWay}"
+                                                     ItemsSource="{Binding $parent[shadui:Window].((vm:MainWindowViewModel)DataContext).AvailableItemNames}"
+                                                     Watermark="e.g. Nova Prime Set"
+                                                     FilterMode="Contains"
+                                                     LostFocus="AutoCompleteBox_OnLostFocus"
+                                                     Margin="0,0,15,0" />
+                                    <NumericUpDown Grid.Column="1"
+                                                   Value="{Binding TargetRank}"
+                                                   Minimum="0"
+                                                   Maximum="{Binding MaxRank}"
+                                                   FormatString="'R' 0"
+                                                   IsVisible="{Binding HasRanks}"
+                                                   MinWidth="130"
+                                                   Margin="0,0,15,0" />
+                                    <NumericUpDown Grid.Column="2"
+                                                   Value="{Binding TargetPlatinum}"
+                                                   Minimum="1"
+                                                   FormatString="0 'p'"
+                                                   Margin="0,0,15,0" />
+                                    <ToggleSwitch Grid.Column="3"
+                                                  IsChecked="{Binding IsEnabled}"
+                                                  Margin="0,0,15,0" />
+                                    <Button Grid.Column="4"
+                                            Command="{Binding RemoveCommand}"
+                                            Classes="Destructive Outline"
+                                            Content="✕" />
+                                </Grid>
+                                <StackPanel Orientation="Horizontal" Spacing="10"
+                                            IsVisible="{Binding IsValid}"
+                                            VerticalAlignment="Center">
+                                    <HyperlinkButton Content="Sale Link"
+                                                     NavigateUri="{Binding MarketUrl}"
+                                                     Padding="0" MinHeight="0"
+                                                     FontSize="12" />
+                                    <StackPanel Orientation="Horizontal" Spacing="10"
+                                                IsVisible="{Binding BestOffer, Converter={x:Static ObjectConverters.IsNotNull}}"
+                                                VerticalAlignment="Center">
+                                        <Border Width="1" Margin="0,2"
+                                                Background="{DynamicResource BorderColor}" />
+                                        <TextBlock VerticalAlignment="Center"
+                                                   FontSize="12"
+                                                   Text="{Binding BestOffer.Platinum, StringFormat='Best offer: {0}p'}" />
+                                        <TextBlock VerticalAlignment="Center"
+                                                   FontSize="12"
+                                                   Foreground="{DynamicResource MutedColor}"
+                                                   Text="{Binding BestOffer.SellerName, StringFormat='from {0}'}" />
+                                        <Border Width="1" Margin="0,2"
+                                                Background="{DynamicResource BorderColor}" />
+                                        <HyperlinkButton Content="Copy Whisper"
+                                                         Command="{Binding CopyWhisperCommand}"
+                                                         Padding="0" MinHeight="0"
+                                                         FontSize="12" />
+                                        <Border Width="1" Margin="0,2"
+                                                Background="{DynamicResource BorderColor}" />
+                                        <HyperlinkButton Content="Ignore Offer"
+                                                         Command="{Binding IgnoreOfferCommand}"
+                                                         Padding="0" MinHeight="0"
+                                                         FontSize="12" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </StackPanel>
                         </Border>
-
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>

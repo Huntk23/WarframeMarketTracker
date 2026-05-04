@@ -1,12 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Input.Platform;
 using Avalonia.Labs.Notifications;
-using Avalonia.Threading;
 using Microsoft.Extensions.Logging;
 
 namespace WarframeMarketTracker.Services;
@@ -23,10 +24,9 @@ public class NativeNotificationService : INotificationService
     ];
 
     private readonly ILogger<NativeNotificationService> _logger;
+    private readonly Dictionary<uint, MarketOffer> _pending = new();
 
-    // Pending notification data keyed by notification ID
-    private readonly Dictionary<uint, PendingNotification> _pending = new();
-
+    public event Action<MarketOffer>? OfferAvailable;
     public event Action<string>? OrderIgnored;
 
     public NativeNotificationService(ILogger<NativeNotificationService> logger)
@@ -44,28 +44,57 @@ public class NativeNotificationService : INotificationService
         }
     }
 
-    public Task ShowNotificationAsync(string title, string body, string whisper, string orderId)
+    public Task NotifyOfferAsync(MarketOffer offer)
     {
+        // Always raise the in-app event so the UI can show a fallback even if the toast doesn't fire
+        OfferAvailable?.Invoke(offer);
+
         var manager = NativeNotificationManager.Current;
         if (manager == null) return Task.CompletedTask;
 
-        var notification = manager.CreateNotification("market_alerts");
+        var notification = manager.CreateNotification(Program.NotificationChannelId);
         if (notification == null) return Task.CompletedTask;
 
-        notification.Title = title;
-        notification.Message = body;
+        notification.Title = $"Deal Found: {offer.ItemName}";
+        notification.Message =
+            $"{offer.Platinum}p from {offer.SellerName}{Environment.NewLine}Target: {offer.TargetPlatinum}p";
         notification.SetActions(NotificationActions);
 
-        _pending[notification.Id] = new PendingNotification(whisper, orderId);
-
+        _pending[notification.Id] = offer;
         notification.Show();
 
         return Task.CompletedTask;
     }
 
+    public void IgnoreOffer(string orderId)
+    {
+        _logger.LogInformation("User ignored order {OrderId}.", orderId);
+        OrderIgnored?.Invoke(orderId);
+    }
+
+    public async Task CopyWhisperAsync(string whisper)
+    {
+        var clipboard = GetClipboard();
+        if (clipboard == null)
+        {
+            _logger.LogWarning("Clipboard unavailable.");
+            return;
+        }
+
+        try
+        {
+            await clipboard.SetTextAsync(whisper);
+            _logger.LogInformation("Whisper copied to clipboard.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to copy whisper to clipboard.");
+        }
+    }
+
     private void OnNotificationCompleted(object? sender, NativeNotificationCompletedEventArgs e)
     {
-        if (!e.NotificationId.HasValue || !_pending.TryGetValue(e.NotificationId.Value, out var data))
+        if (!e.NotificationId.HasValue || !_pending.TryGetValue(e.NotificationId.Value, out var offer))
             return;
 
         _pending.Remove(e.NotificationId.Value);
@@ -73,23 +102,15 @@ public class NativeNotificationService : INotificationService
         switch (e.ActionTag)
         {
             case CopyActionTag:
-                Dispatcher.UIThread.Post(async () =>
-                {
-                    var clipboard = GetClipboard();
-                    if (clipboard != null)
-                    {
-                        await clipboard.SetTextAsync(data.Whisper);
-                        _logger.LogInformation("Whisper copied to clipboard.");
-                    }
-                    else
-                    {
-                        _logger.LogWarning("Clipboard unavailable.");
-                    }
-                });
+                _ = CopyWhisperAsync(offer.Whisper);
                 break;
             case IgnoreActionTag:
-                _logger.LogInformation("User ignored order {OrderId}.", data.OrderId);
-                OrderIgnored?.Invoke(data.OrderId);
+                IgnoreOffer(offer.OrderId);
+                break;
+            default:
+                var url = $"https://warframe.market/items/{offer.Slug}?type=sell";
+                OpenUrl(url);
+                _logger.LogInformation("Opened sale page for {Slug}.", offer.Slug);
                 break;
         }
     }
@@ -105,5 +126,13 @@ public class NativeNotificationService : INotificationService
         return null;
     }
 
-    private record PendingNotification(string Whisper, string OrderId);
+    private static void OpenUrl(string url)
+    {
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            Process.Start("xdg-open", url);
+        else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            Process.Start("open", url);
+    }
 }

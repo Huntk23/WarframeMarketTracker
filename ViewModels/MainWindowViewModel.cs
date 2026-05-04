@@ -4,7 +4,9 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Linq;
 using System.Threading.Tasks;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.DependencyInjection;
 using WarframeMarketTracker.Models;
 using WarframeMarketTracker.Services;
 using WarframeMarketTracker.Views;
@@ -16,9 +18,18 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly IItemCache _cache;
     private readonly ITrackedItemRegistry _registry;
     private readonly ITrackedItemStore _store;
-    private readonly Func<AboutWindowViewModel> _aboutViewModelFactory;
+    private readonly INotificationService _notifications;
+    private readonly IServiceProvider _services;
     private bool _isLoading;
 
+    private static readonly HashSet<string> PersistedProperties =
+    [
+        nameof(TrackedItemViewModel.ItemName),
+        nameof(TrackedItemViewModel.TargetPlatinum),
+        nameof(TrackedItemViewModel.TargetRank),
+        nameof(TrackedItemViewModel.IsEnabled),
+    ];
+    
     public ObservableCollection<TrackedItemViewModel> TrackedItems { get; } = new();
 
     public IEnumerable<string> AvailableItemNames => _cache.Items.Select(i => i.EnglishName);
@@ -27,15 +38,28 @@ public partial class MainWindowViewModel : ViewModelBase
         IItemCache cache,
         ITrackedItemRegistry registry,
         ITrackedItemStore store,
-        Func<AboutWindowViewModel> aboutViewModelFactory)
+        INotificationService notifications,
+        IServiceProvider services)
     {
         _cache = cache;
         _registry = registry;
         _store = store;
-        _aboutViewModelFactory = aboutViewModelFactory;
+        _notifications = notifications;
+        _services = services;
 
         TrackedItems.CollectionChanged += OnTrackedItemsChanged;
+        _notifications.OfferAvailable += OnOfferAvailable;
         LoadTrackedItems();
+    }
+
+    private void OnOfferAvailable(MarketOffer offer)
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            var match = TrackedItems.FirstOrDefault(vm =>
+                string.Equals(vm.Slug, offer.Slug, StringComparison.OrdinalIgnoreCase));
+            match?.SetBestOffer(offer);
+        });
     }
 
     [RelayCommand]
@@ -43,7 +67,7 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         if (Owner is null) return;
 
-        var vm = _aboutViewModelFactory();
+        var vm = _services.GetRequiredService<AboutWindowViewModel>();
         var window = new AboutWindow { DataContext = vm };
         _ = vm.CheckForUpdateAsync();
         await window.ShowDialog(Owner);
@@ -72,11 +96,15 @@ public partial class MainWindowViewModel : ViewModelBase
 
         _isLoading = false;
     }
-
+    
     private TrackedItemViewModel CreateTrackedItem()
     {
-        var vm = new TrackedItemViewModel(_cache, _registry, item => TrackedItems.Remove(item));
-        vm.PropertyChanged += (_, _) => SaveTrackedItems();
+        var vm = new TrackedItemViewModel(_cache, _registry, _notifications, item => TrackedItems.Remove(item));
+        vm.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName != null && PersistedProperties.Contains(e.PropertyName))
+                SaveTrackedItems();
+        };
         return vm;
     }
 

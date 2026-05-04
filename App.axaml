@@ -7,6 +7,6 @@
     <Application.Styles>
         <shadui:ShadTheme />
 
-        <StyleInclude Source="avares://WarframeMarketTracker/Styles.axaml"></StyleInclude>
+        <StyleInclude Source="avares://WarframeMarketTracker/Styles.axaml" />
     </Application.Styles>
 </Application>

@@ -80,13 +80,16 @@ public partial class MarketPollingService : BackgroundService
 
                         LogDealFoundWithTargetPrice(item.ItemName, lowestOrder.Platinum, item.TargetPlatinum);
 
-                        var whisper = lowestOrder.GenerateWhisper(item.ItemName);
+                        var offer = new MarketOffer(
+                            item.Slug,
+                            item.ItemName,
+                            lowestOrder.Id,
+                            lowestOrder.Platinum,
+                            item.TargetPlatinum,
+                            lowestOrder.User.IngameName,
+                            lowestOrder.GenerateWhisper(item.ItemName));
 
-                        await _notifications.ShowNotificationAsync(
-                            $"Deal Found: {item.ItemName}",
-                            $"{lowestOrder.Platinum}p from {lowestOrder.User.IngameName} {Environment.NewLine}Target: {item.TargetPlatinum}p",
-                            whisper,
-                            lowestOrder.Id);
+                        await _notifications.NotifyOfferAsync(offer);
                     }
                     else
                     {

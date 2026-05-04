@@ -5,7 +5,8 @@
         <Nullable>enable</Nullable>
         <ApplicationManifest>app.manifest</ApplicationManifest>
         <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
-        <Version>1.0.2</Version>
+        <ApplicationIcon>Assets\wmt-logo.ico</ApplicationIcon>
+        <Version>1.1.0</Version>
     </PropertyGroup>
 
     <ItemGroup>
@@ -36,6 +37,7 @@
         <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
         <PackageReference Include="ShadUI" Version="0.1.6" />
     </ItemGroup>
+    
     <!-- Auto-generate PackageVersions.g.cs from PackageReference items at build time -->
     <Target Name="GeneratePackageVersions" BeforeTargets="CoreCompile;DesignTimeBuild">
         <PropertyGroup>

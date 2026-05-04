@@ -1,7 +1,9 @@
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using WarframeMarketTracker.Models;
 using WarframeMarketTracker.Services;
 
 namespace WarframeMarketTracker.ViewModels;
@@ -10,7 +12,10 @@ public partial class TrackedItemViewModel : ViewModelBase
 {
     private readonly IItemCache _cache;
     private readonly ITrackedItemRegistry _registry;
+    private readonly INotificationService _notifications;
     private readonly Action<TrackedItemViewModel> _removeCallback;
+    private ItemShort? _resolvedItem;
+    private string? _registeredKey;
 
     [ObservableProperty]
     public partial string ItemName { get; set; } = string.Empty;
@@ -33,35 +38,67 @@ public partial class TrackedItemViewModel : ViewModelBase
     [ObservableProperty]
     public partial bool HasRanks { get; set; }
 
-    public TrackedItemViewModel(IItemCache cache, ITrackedItemRegistry registry, Action<TrackedItemViewModel> removeCallback)
+    [ObservableProperty]
+    public partial Uri? MarketUrl { get; set; }
+
+    [ObservableProperty]
+    public partial MarketOffer? BestOffer { get; set; }
+
+    public string? Slug => _resolvedItem?.Slug;
+
+    public TrackedItemViewModel(
+        IItemCache cache,
+        ITrackedItemRegistry registry,
+        INotificationService notifications,
+        Action<TrackedItemViewModel> removeCallback)
     {
         _cache = cache;
         _registry = registry;
+        _notifications = notifications;
         _removeCallback = removeCallback;
     }
+
+    public void SetBestOffer(MarketOffer offer) => BestOffer = offer;
 
     [RelayCommand]
     private void Remove()
     {
-        if (IsEnabled)
-            _registry.Unregister(ItemName);
-
+        UnregisterIfNeeded();
         _removeCallback(this);
+    }
+
+    [RelayCommand]
+    private async Task CopyWhisper()
+    {
+        if (BestOffer is null) return;
+        await _notifications.CopyWhisperAsync(BestOffer.Whisper);
+    }
+
+    [RelayCommand]
+    private void IgnoreOffer()
+    {
+        if (BestOffer is null) return;
+        _notifications.IgnoreOffer(BestOffer.OrderId);
+        BestOffer = null;
     }
 
     partial void OnItemNameChanged(string value)
     {
-        var item = _cache.Items.FirstOrDefault(i =>
+        UnregisterIfNeeded();
+        BestOffer = null;
+
+        _resolvedItem = _cache.Items.FirstOrDefault(i =>
             i.EnglishName.Equals(value, StringComparison.OrdinalIgnoreCase));
 
-        IsValid = item != null;
+        IsValid = _resolvedItem != null;
+        MarketUrl = _resolvedItem != null
+            ? new Uri($"https://warframe.market/items/{_resolvedItem.Slug}?type=sell")
+            : null;
 
-        if (item != null)
+        if (_resolvedItem != null)
         {
-            MaxRank = item.MaxRank;
-            HasRanks = item.MaxRank is > 0;
-
-            // Reset target rank when switching items
+            MaxRank = _resolvedItem.MaxRank;
+            HasRanks = _resolvedItem.MaxRank is > 0;
             TargetRank = HasRanks ? MaxRank : null;
         }
         else
@@ -72,35 +109,47 @@ public partial class TrackedItemViewModel : ViewModelBase
         }
 
         if (!IsValid) IsEnabled = false;
+        else if (IsEnabled) RegisterEntry();
     }
 
     partial void OnIsEnabledChanged(bool value)
     {
         if (value && IsValid)
+        {
             RegisterEntry();
+        }
         else
-            _registry.Unregister(ItemName);
+        {
+            UnregisterIfNeeded();
+            BestOffer = null;
+        }
     }
 
     partial void OnTargetPlatinumChanged(int value)
     {
+        BestOffer = null;
         if (IsEnabled && IsValid) RegisterEntry();
     }
 
     partial void OnTargetRankChanged(int? value)
     {
+        BestOffer = null;
         if (IsEnabled && IsValid) RegisterEntry();
     }
 
     private void RegisterEntry()
     {
-        var item = _cache.Items.FirstOrDefault(i =>
-            i.EnglishName.Equals(ItemName, StringComparison.OrdinalIgnoreCase));
+        if (_resolvedItem == null) return;
 
-        if (item != null)
-        {
-            _registry.Register(ItemName, new TrackedItemEntry(
-                item.Slug, ItemName, TargetPlatinum, HasRanks ? TargetRank : null));
-        }
+        _registry.Register(ItemName, new TrackedItemEntry(
+            _resolvedItem.Slug, ItemName, TargetPlatinum, HasRanks ? TargetRank : null));
+        _registeredKey = ItemName;
+    }
+
+    private void UnregisterIfNeeded()
+    {
+        if (_registeredKey == null) return;
+        _registry.Unregister(_registeredKey);
+        _registeredKey = null;
     }
 }

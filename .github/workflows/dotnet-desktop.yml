@@ -73,8 +73,12 @@ jobs:
           Win64/WarframeMarketTracker_Win64.zip
           Linux-x64/WarframeMarketTracker_Linux-x64.tar.gz
         name: Version ${{ github.ref_name }}
+        # 1. Enable automatic note generation
+        generate_release_notes: true
+        # 2. Tell the action to ADD your text, not replace it
+        append_body: true
         body: |
-          Multi-platform build for Version ${{ github.ref_name }}
-          Requires .NET 10 Runtime installed on the host system.
+          ---
+          > Requires .NET 10 Runtime installed on the host system
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

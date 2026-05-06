@@ -1,6 +1,6 @@
 # Warframe Market Tracker
 
-[![Windows](https://img.shields.io/badge/Windows-Tested-brightgreen?style=flat-square&logo=windows&logoColor=white)](#)
+[![Windows](https://img.shields.io/badge/Windows-Tested-brightgreen?style=flat-square&logo=gitforwindows&logoColor=white)](#)
 [![Linux](https://img.shields.io/badge/Linux-Testing-yellow?style=flat-square&logo=linux&logoColor=white)](#)
 [![macOS](https://img.shields.io/badge/macOS-Untested-red?style=flat-square&logo=apple&logoColor=white)](#)
 
@@ -10,7 +10,7 @@
 
 ---
 
-A lightweight desktop app that watches personally selected [warframe.market](https://warframe.market) item prices in the background and pings you when a deal hits your target — so you don't have to constantly refresh the sellers tab or wait on a seller to click on the buyer tab; because unfortunately we all know buying a deal is better than waiting for a deal to come to you.
+A lightweight desktop app that watches personally selected [warframe.market](https://warframe.market) item prices in the background and pings you when a deal hits your target — so you don't have to constantly refresh the sellers’ tab or wait on a seller to click on the buyer tab; because unfortunately, _we all know_ buying a deal is better than waiting for a deal to come to you.
 
 ## Preview
 
@@ -21,12 +21,12 @@ A lightweight desktop app that watches personally selected [warframe.market](htt
 ## What it does
 
 - **Track items by name** — search from the full [warframe.market](https://warframe.market) item catalog with autocomplete
-  - **Persistence** — the app will save and restore the items you are tracking automatically during app session and on close
+  - **Persistence** — the app will save and restore the items you are tracking automatically during the app session and on close
 - **Set your price** — pick a platinum threshold per item, optionally filter by mod rank
 - **Get notified** — cross-platform native notification when an in-game seller lists at or below your target
   - **Sales link** — open the tracked items sale page
   - **Copy the whisper** — one click on the notification copies the `/w` trade message to your clipboard, ready to paste in-game, all while using the same [warframe.market](https://warframe.market) standard
-  - **Ignore offers** — dismiss a specific seller's order so you stop hearing about it during app session
+  - **Ignore offers** — dismiss a specific seller's order so you stop hearing about it during the app session
 - **Lives in your tray** — closing the window hides it to the system tray, the poller keeps running no matter what
   - Should be compatible with any OS, including Windows, macOS, and Linux. Since Warframe is not Mac compatabile, we'll be ready.
 

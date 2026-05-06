@@ -8,6 +8,10 @@ on:
 permissions:
   contents: write
 
+env:
+  # Opts all javascript actions into Node.js 24 to clear runner warnings
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
 jobs:
   build:
     strategy:
@@ -66,18 +70,27 @@ jobs:
     - name: Download all artifacts
       uses: actions/download-artifact@v4
 
+    # Step 1: Create the release and let GitHub auto-generate the notes
     - name: Create Release
+      id: create_release
       uses: softprops/action-gh-release@v2
       with:
         files: |
           Win64/WarframeMarketTracker_Win64.zip
           Linux-x64/WarframeMarketTracker_Linux-x64.tar.gz
         name: Version ${{ github.ref_name }}
-        # 1. Enable automatic note generation
         generate_release_notes: true
-        # 2. Tell the action to ADD your text, not replace it
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    # Step 2: Append your custom footer at the bottom of the generated notes
+    - name: Append Footer to Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ github.ref_name }}
         append_body: true
         body: |
+          
           ---
           > Requires .NET 10 Runtime installed on the host system
       env:

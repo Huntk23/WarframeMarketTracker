@@ -77,8 +77,11 @@ internal static class Program
                     // 4. Components & UI
                     services.AddSingleton<IUserInterfaceNotificationService, UserInterfaceNotificationService>();
                     services.AddSingleton<INotificationService, NativeNotificationService>();
+                    services.AddSingleton<IDialogService, DialogService>();
                     services.AddTransient<AboutWindowViewModel>();
+                    services.AddSingleton<Func<AboutWindowViewModel>>(sp => sp.GetRequiredService<AboutWindowViewModel>);
                     services.AddSingleton<MainWindowViewModel>();
+                    services.AddSingleton(sp => new Lazy<MainWindowViewModel>(sp.GetRequiredService<MainWindowViewModel>));
                     services.AddSingleton<MainWindow>();
                 })
                 .Build();

@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -89,8 +88,7 @@ public partial class TrackedItemViewModel : ViewModelBase
         UnregisterIfNeeded();
         BestOffer = null;
 
-        _resolvedItem = _cache.Items.FirstOrDefault(i =>
-            i.EnglishName.Equals(value, StringComparison.OrdinalIgnoreCase));
+        _cache.TryGetByName(value, out _resolvedItem);
 
         IsValid = _resolvedItem != null;
         MarketUrl = _resolvedItem != null

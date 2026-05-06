@@ -6,10 +6,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.Input;
-using Microsoft.Extensions.DependencyInjection;
 using WarframeMarketTracker.Models;
 using WarframeMarketTracker.Services;
-using WarframeMarketTracker.Views;
 
 namespace WarframeMarketTracker.ViewModels;
 
@@ -19,7 +17,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly ITrackedItemRegistry _registry;
     private readonly ITrackedItemStore _store;
     private readonly IUserInterfaceNotificationService _uiNotificationService;
-    private readonly IServiceProvider _services;
+    private readonly IDialogService _dialogService;
     private bool _isLoading;
 
     private static readonly HashSet<string> PersistedProperties =
@@ -32,7 +30,7 @@ public partial class MainWindowViewModel : ViewModelBase
     
     public ObservableCollection<TrackedItemViewModel> TrackedItems { get; } = new();
 
-    public IEnumerable<ItemShort> AvailableItems => _cache.Items.OrderBy(i => i.EnglishName);
+    public IReadOnlyList<ItemShort> AvailableItems => _cache.Items;
 
     public event Action<TrackedItemViewModel>? RowAdded;
 
@@ -41,13 +39,13 @@ public partial class MainWindowViewModel : ViewModelBase
         ITrackedItemRegistry registry,
         ITrackedItemStore store,
         IUserInterfaceNotificationService uiNotificationService,
-        IServiceProvider services)
+        IDialogService dialogService)
     {
         _cache = cache;
         _registry = registry;
         _store = store;
         _uiNotificationService = uiNotificationService;
-        _services = services;
+        _dialogService = dialogService;
 
         TrackedItems.CollectionChanged += OnTrackedItemsChanged;
         _uiNotificationService.OfferAvailable += OnOfferAvailable;
@@ -76,15 +74,7 @@ public partial class MainWindowViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private async Task OpenAbout()
-    {
-        if (Owner is null) return;
-
-        var vm = _services.GetRequiredService<AboutWindowViewModel>();
-        var window = new AboutWindow { DataContext = vm };
-        _ = vm.CheckForUpdateAsync();
-        await window.ShowDialog(Owner);
-    }
+    private Task OpenAbout() => _dialogService.ShowAboutAsync();
 
     [RelayCommand]
     private void AddRow()

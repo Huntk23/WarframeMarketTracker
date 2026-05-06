@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -17,15 +18,15 @@ public partial class MarketPollingService : BackgroundService
     private readonly IUserInterfaceNotificationService _uiNotificationService;
     private readonly ILogger<MarketPollingService> _logger;
 
-    // Tracks the last price we notified about per slug — only re-notify if a lower price appears
-    private readonly Dictionary<string, int> _lastNotifiedPrice = new();
+    // Tracks the offer we last surfaced per slug. Used both for re-notify dedupe (only fire on a lower price) and
+    // for clearing the UI label when that specific deal disappears (seller offline / item sold).
+    private readonly Dictionary<string, NotifiedOffer> _lastNotified = new();
 
-    // Tracks the order ID we last surfaced to the UI per slug — used to detect when that specific deal disappears
-    // (seller went offline, item sold) so we can clear the label.
-    private readonly Dictionary<string, string> _lastNotifiedOfferId = new();
+    // Orders the user chose to ignore for this session. Concurrent because OrderIgnored fires on the UI thread while
+    // the poll loop reads from a background thread.
+    private readonly ConcurrentDictionary<string, byte> _ignoredOrderIds = new();
 
-    // Orders the user chose to ignore for this session
-    private readonly HashSet<string> _ignoredOrderIds = new();
+    private sealed record NotifiedOffer(string OrderId, int Platinum);
 
     public MarketPollingService(
         IWarframeMarketService api,
@@ -40,7 +41,7 @@ public partial class MarketPollingService : BackgroundService
         _uiNotificationService = uiNotificationService;
         _logger = logger;
 
-        _uiNotificationService.OrderIgnored += orderId => _ignoredOrderIds.Add(orderId);
+        _uiNotificationService.OrderIgnored += orderId => _ignoredOrderIds.TryAdd(orderId, 0);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -75,17 +76,16 @@ public partial class MarketPollingService : BackgroundService
 
                     var lowestOrder = orders.FirstOrDefault();
                     var hasDeal = lowestOrder != null && lowestOrder.Platinum <= item.TargetPlatinum;
-                    var isIgnored = hasDeal && _ignoredOrderIds.Contains(lowestOrder!.Id);
+                    var isIgnored = hasDeal && _ignoredOrderIds.ContainsKey(lowestOrder!.Id);
 
                     if (hasDeal && !isIgnored)
                     {
-                        var isNewLowerPrice = !_lastNotifiedPrice.TryGetValue(item.Slug, out var lastPrice)
-                                              || lowestOrder!.Platinum < lastPrice;
+                        var hadNotified = _lastNotified.TryGetValue(item.Slug, out var last);
+                        var isNewLowerPrice = !hadNotified || lowestOrder!.Platinum < last!.Platinum;
 
                         if (isNewLowerPrice)
                         {
-                            _lastNotifiedPrice[item.Slug] = lowestOrder!.Platinum;
-                            _lastNotifiedOfferId[item.Slug] = lowestOrder.Id;
+                            _lastNotified[item.Slug] = new NotifiedOffer(lowestOrder!.Id, lowestOrder.Platinum);
 
                             LogDealFoundWithTargetPrice(item.ItemName, lowestOrder.Platinum, item.TargetPlatinum);
 
@@ -102,28 +102,21 @@ public partial class MarketPollingService : BackgroundService
                             _uiNotificationService.SurfaceOffer(offer);
                             await _toast.ShowOfferAsync(offer);
                         }
-                        else if (_lastNotifiedOfferId.TryGetValue(item.Slug, out var lastId)
-                                 && lastId != lowestOrder!.Id)
+                        else if (last!.OrderId != lowestOrder!.Id)
                         {
                             // Same/higher price than last notification, but a different seller is now cheapest - the original deal is gone.
                             LogDealCleared(item.ItemName);
-                            
-                            _lastNotifiedOfferId.Remove(item.Slug);
-                            _lastNotifiedPrice.Remove(item.Slug);
+
+                            _lastNotified.Remove(item.Slug);
                             _uiNotificationService.ClearOffer(item.Slug);
                         }
                     }
-                    else
+                    else if (_lastNotified.Remove(item.Slug))
                     {
                         // Either no qualifying deal exists, or the cheapest is the deal the user ignored.
-                        _lastNotifiedPrice.Remove(item.Slug);
-                        
-                        if (_lastNotifiedOfferId.Remove(item.Slug))
-                        {
-                            LogDealCleared(item.ItemName);
-                            
-                            _uiNotificationService.ClearOffer(item.Slug);
-                        }
+                        LogDealCleared(item.ItemName);
+
+                        _uiNotificationService.ClearOffer(item.Slug);
                     }
                 }
                 catch (Exception ex)

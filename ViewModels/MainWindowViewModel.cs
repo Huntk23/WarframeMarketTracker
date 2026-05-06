@@ -6,10 +6,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.Input;
-using Microsoft.Extensions.DependencyInjection;
 using WarframeMarketTracker.Models;
 using WarframeMarketTracker.Services;
-using WarframeMarketTracker.Views;
 
 namespace WarframeMarketTracker.ViewModels;
 
@@ -18,8 +16,8 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly IItemCache _cache;
     private readonly ITrackedItemRegistry _registry;
     private readonly ITrackedItemStore _store;
-    private readonly INotificationService _notifications;
-    private readonly IServiceProvider _services;
+    private readonly IUserInterfaceNotificationService _uiNotificationService;
+    private readonly IDialogService _dialogService;
     private bool _isLoading;
 
     private static readonly HashSet<string> PersistedProperties =
@@ -32,23 +30,26 @@ public partial class MainWindowViewModel : ViewModelBase
     
     public ObservableCollection<TrackedItemViewModel> TrackedItems { get; } = new();
 
-    public IEnumerable<string> AvailableItemNames => _cache.Items.Select(i => i.EnglishName);
+    public IReadOnlyList<ItemShort> AvailableItems => _cache.Items;
+
+    public event Action<TrackedItemViewModel>? RowAdded;
 
     public MainWindowViewModel(
         IItemCache cache,
         ITrackedItemRegistry registry,
         ITrackedItemStore store,
-        INotificationService notifications,
-        IServiceProvider services)
+        IUserInterfaceNotificationService uiNotificationService,
+        IDialogService dialogService)
     {
         _cache = cache;
         _registry = registry;
         _store = store;
-        _notifications = notifications;
-        _services = services;
+        _uiNotificationService = uiNotificationService;
+        _dialogService = dialogService;
 
         TrackedItems.CollectionChanged += OnTrackedItemsChanged;
-        _notifications.OfferAvailable += OnOfferAvailable;
+        _uiNotificationService.OfferAvailable += OnOfferAvailable;
+        _uiNotificationService.OfferCleared += OnOfferCleared;
         LoadTrackedItems();
     }
 
@@ -62,19 +63,26 @@ public partial class MainWindowViewModel : ViewModelBase
         });
     }
 
-    [RelayCommand]
-    private async Task OpenAbout()
+    private void OnOfferCleared(string slug)
     {
-        if (Owner is null) return;
-
-        var vm = _services.GetRequiredService<AboutWindowViewModel>();
-        var window = new AboutWindow { DataContext = vm };
-        _ = vm.CheckForUpdateAsync();
-        await window.ShowDialog(Owner);
+        Dispatcher.UIThread.Post(() =>
+        {
+            var match = TrackedItems.FirstOrDefault(vm =>
+                string.Equals(vm.Slug, slug, StringComparison.OrdinalIgnoreCase));
+            match?.ClearBestOffer();
+        });
     }
 
     [RelayCommand]
-    private void AddRow() => TrackedItems.Add(CreateTrackedItem());
+    private Task OpenAbout() => _dialogService.ShowAboutAsync();
+
+    [RelayCommand]
+    private void AddRow()
+    {
+        var vm = CreateTrackedItem();
+        TrackedItems.Add(vm);
+        RowAdded?.Invoke(vm);
+    }
 
     private void LoadTrackedItems()
     {
@@ -99,7 +107,7 @@ public partial class MainWindowViewModel : ViewModelBase
     
     private TrackedItemViewModel CreateTrackedItem()
     {
-        var vm = new TrackedItemViewModel(_cache, _registry, _notifications, item => TrackedItems.Remove(item));
+        var vm = new TrackedItemViewModel(_cache, _registry, _uiNotificationService, item => TrackedItems.Remove(item));
         vm.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName != null && PersistedProperties.Contains(e.PropertyName))

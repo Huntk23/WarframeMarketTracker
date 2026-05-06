@@ -21,10 +21,12 @@ public record ItemShort(
 )
 {
     public string EnglishName => I18N.TryGetValue("en", out var en) ? en.Name : Slug;
+
+    public string? Thumb => I18N.TryGetValue("en", out var en) ? en.SubIcon ?? en.Icon : null;
 }
 
 public record ItemI18N(
     [property: JsonPropertyName("name")] string Name,
     [property: JsonPropertyName("icon")] string Icon,
-    [property: JsonPropertyName("thumb")] string Thumb
+    [property: JsonPropertyName("subIcon")] string? SubIcon
 );

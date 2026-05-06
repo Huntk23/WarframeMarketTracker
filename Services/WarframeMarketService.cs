@@ -13,7 +13,6 @@ namespace WarframeMarketTracker.Services;
 public interface IWarframeMarketService
 {
     Task<List<OrderWithUser>> GetOrdersBySlugAsync(string slug, CancellationToken ct = default);
-    Task<OrderWithUser?> GetLowestSellOrderAsync(string slug, int? rank = null, CancellationToken ct = default);
 }
 
 public class WarframeMarketService : IWarframeMarketService
@@ -21,9 +20,9 @@ public class WarframeMarketService : IWarframeMarketService
     private readonly HttpClient _httpClient;
     private readonly ILogger<WarframeMarketService> _logger;
 
-    public WarframeMarketService(HttpClient httpClient, ILogger<WarframeMarketService> logger)
+    public WarframeMarketService(IHttpClientFactory httpClientFactory, ILogger<WarframeMarketService> logger)
     {
-        _httpClient = httpClient;
+        _httpClient = httpClientFactory.CreateClient("WfmApi");
         _logger = logger;
     }
 
@@ -49,13 +48,4 @@ public class WarframeMarketService : IWarframeMarketService
         }
     }
 
-    public async Task<OrderWithUser?> GetLowestSellOrderAsync(string slug, int? rank = null, CancellationToken ct = default)
-    {
-        var orders = await GetOrdersBySlugAsync(slug, ct);
-
-        if (rank.HasValue)
-            orders = orders.Where(o => o.Rank == rank.Value).ToList();
-
-        return orders.FirstOrDefault();
-    }
 }

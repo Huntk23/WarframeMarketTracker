@@ -7,6 +7,8 @@
                xmlns:local="clr-namespace:WarframeMarketTracker"
                xmlns:conv="using:WarframeMarketTracker.Converters"
                xmlns:assets="using:WarframeMarketTracker.Assets"
+               xmlns:ctrl="using:WarframeMarketTracker.Controls"
+               xmlns:m="using:WarframeMarketTracker.Models"
                mc:Ignorable="d" d:DesignWidth="750" d:DesignHeight="500"
                x:Class="WarframeMarketTracker.Views.MainWindow"
                x:DataType="vm:MainWindowViewModel"
@@ -60,7 +62,7 @@
 
     <Grid RowDefinitions="Auto, *, Auto" Margin="12">
         <ScrollViewer Grid.Row="1" Margin="0,0,-10,0" Padding="0,0,12,0">
-            <ItemsControl ItemsSource="{Binding TrackedItems}">
+            <ItemsControl Name="TrackedItemsControl" ItemsSource="{Binding TrackedItems}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="vm:TrackedItemViewModel">
                         <Border Classes="Card" Margin="0,0,0,6" Padding="10" Tag="{Binding IsValid, Converter={StaticResource ValidityToTagConverter}}">
@@ -68,11 +70,23 @@
                                 <Grid ColumnDefinitions="*, Auto, 170, Auto, Auto">
                                     <AutoCompleteBox Grid.Column="0"
                                                      Text="{Binding ItemName, Mode=TwoWay}"
-                                                     ItemsSource="{Binding $parent[shadui:Window].((vm:MainWindowViewModel)DataContext).AvailableItemNames}"
+                                                     ItemsSource="{Binding $parent[shadui:Window].((vm:MainWindowViewModel)DataContext).AvailableItems}"
+                                                     ValueMemberBinding="{Binding EnglishName, x:DataType=m:ItemShort}"
                                                      Watermark="e.g. Nova Prime Set"
                                                      FilterMode="Contains"
                                                      LostFocus="AutoCompleteBox_OnLostFocus"
-                                                     Margin="0,0,15,0" />
+                                                     Margin="0,0,15,0">
+                                        <AutoCompleteBox.ItemTemplate>
+                                            <DataTemplate DataType="m:ItemShort">
+                                                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                                    <Image Width="24" Height="24"
+                                                           ctrl:CachedImage.ThumbPath="{Binding Thumb}" />
+                                                    <TextBlock VerticalAlignment="Center"
+                                                               Text="{Binding EnglishName}" />
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </AutoCompleteBox.ItemTemplate>
+                                    </AutoCompleteBox>
                                     <NumericUpDown Grid.Column="1"
                                                    Value="{Binding TargetRank}"
                                                    Minimum="0"

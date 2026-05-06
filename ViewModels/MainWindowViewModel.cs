@@ -18,7 +18,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly IItemCache _cache;
     private readonly ITrackedItemRegistry _registry;
     private readonly ITrackedItemStore _store;
-    private readonly INotificationService _notifications;
+    private readonly IUserInterfaceNotificationService _uiNotificationService;
     private readonly IServiceProvider _services;
     private bool _isLoading;
 
@@ -38,17 +38,18 @@ public partial class MainWindowViewModel : ViewModelBase
         IItemCache cache,
         ITrackedItemRegistry registry,
         ITrackedItemStore store,
-        INotificationService notifications,
+        IUserInterfaceNotificationService uiNotificationService,
         IServiceProvider services)
     {
         _cache = cache;
         _registry = registry;
         _store = store;
-        _notifications = notifications;
+        _uiNotificationService = uiNotificationService;
         _services = services;
 
         TrackedItems.CollectionChanged += OnTrackedItemsChanged;
-        _notifications.OfferAvailable += OnOfferAvailable;
+        _uiNotificationService.OfferAvailable += OnOfferAvailable;
+        _uiNotificationService.OfferCleared += OnOfferCleared;
         LoadTrackedItems();
     }
 
@@ -59,6 +60,16 @@ public partial class MainWindowViewModel : ViewModelBase
             var match = TrackedItems.FirstOrDefault(vm =>
                 string.Equals(vm.Slug, offer.Slug, StringComparison.OrdinalIgnoreCase));
             match?.SetBestOffer(offer);
+        });
+    }
+
+    private void OnOfferCleared(string slug)
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            var match = TrackedItems.FirstOrDefault(vm =>
+                string.Equals(vm.Slug, slug, StringComparison.OrdinalIgnoreCase));
+            match?.ClearBestOffer();
         });
     }
 
@@ -99,7 +110,7 @@ public partial class MainWindowViewModel : ViewModelBase
     
     private TrackedItemViewModel CreateTrackedItem()
     {
-        var vm = new TrackedItemViewModel(_cache, _registry, _notifications, item => TrackedItems.Remove(item));
+        var vm = new TrackedItemViewModel(_cache, _registry, _uiNotificationService, item => TrackedItems.Remove(item));
         vm.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName != null && PersistedProperties.Contains(e.PropertyName))

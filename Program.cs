@@ -16,8 +16,6 @@ namespace WarframeMarketTracker;
 internal static class Program
 {
     public const string AppName = "Warframe Market Tracker";
-    public const string NotificationChannelId = "market_alerts";
-    public const string AppUserModelId = "com.warframe.market.tracker";
 
     [STAThread]
     public static void Main(string[] args)
@@ -89,6 +87,7 @@ internal static class Program
                     services.AddHostedService<MarketPollingService>();
 
                     // 5. Components & UI
+                    services.AddSingleton<IUserInterfaceNotificationService, UserInterfaceNotificationService>();
                     services.AddSingleton<INotificationService, NativeNotificationService>();
                     services.AddTransient<AboutWindowViewModel>();
                     services.AddSingleton<MainWindowViewModel>();
@@ -120,11 +119,6 @@ internal static class Program
         }
     }
 
-    private static readonly NotificationChannel[] NotificationChannels =
-    [
-        new(NotificationChannelId, "Warframe Market Alerts", NotificationPriority.High)
-    ];
-
     private static AppBuilder BuildAvaloniaApp(IServiceProvider services)
         => AppBuilder.Configure(() => new App(services))
             .UsePlatformDetect()
@@ -132,12 +126,6 @@ internal static class Program
             .WithDeveloperTools()
 #endif
             .WithInterFont()
-            .WithAppNotifications(new AppNotificationOptions
-            {
-                Channels = NotificationChannels,
-                AppName = AppName,
-                // Required for Windows Toast notifications to work correctly
-                AppUserModelId = AppUserModelId
-            })
+            .WithAppNotifications(NativeNotificationService.AppNotificationOptions)
             .LogToTrace();
 }

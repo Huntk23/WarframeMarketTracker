@@ -8,15 +8,10 @@ on:
 permissions:
   contents: write
 
-env:
-  # Opts all javascript actions into Node.js 24 to clear runner warnings
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
-
 jobs:
   build:
     strategy:
       matrix:
-        # Define the target platforms
         include:
           - os: windows-latest
             rid: win-x64
@@ -29,15 +24,14 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
     - name: Setup .NET 10
-      uses: actions/setup-dotnet@v4
+      uses: actions/setup-dotnet@v5
       with:
         dotnet-version: '10.0.x'
 
     - name: Publish
-      # We enable ReadyToRun only on the native OS for that RID
       run: >
         dotnet publish WarframeMarketTracker.csproj 
         -c Release 
@@ -57,7 +51,7 @@ jobs:
       run: tar -czvf WarframeMarketTracker_${{ matrix.suffix }}.tar.gz -C ./publish-${{ matrix.rid }} .
 
     - name: Upload artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: ${{ matrix.suffix }}
         path: WarframeMarketTracker_${{ matrix.suffix }}.*
@@ -68,12 +62,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Download all artifacts
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
 
-    # Step 1: Create the release and let GitHub auto-generate the notes
     - name: Create Release
       id: create_release
-      uses: softprops/action-gh-release@v2
+      uses: softprops/action-gh-release@v3
       with:
         files: |
           Win64/WarframeMarketTracker_Win64.zip
@@ -83,9 +76,8 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    # Step 2: Append your custom footer at the bottom of the generated notes
     - name: Append Footer to Release
-      uses: softprops/action-gh-release@v2
+      uses: softprops/action-gh-release@v3
       with:
         tag_name: ${{ github.ref_name }}
         append_body: true

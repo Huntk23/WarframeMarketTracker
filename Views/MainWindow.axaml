@@ -15,7 +15,8 @@
                Icon="/Assets/wmt-logo.ico"
                Title="{x:Static local:Program.AppName}"
                Width="750" Height="500"
-               CanMaximize="False"
+               MinWidth="750" MinHeight="500"
+               CanMaximize="True"
                CanMinimize="False">
 
     <shadui:Window.Resources>

@@ -1,11 +1,9 @@
 ﻿using System;
-using System.Net.Http;
 using Avalonia;
 using Avalonia.Labs.Notifications;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Serilog;
 using WarframeMarketTracker.Services;
 using WarframeMarketTracker.ViewModels;
@@ -41,16 +39,20 @@ internal static class Program
                 .UseSerilog()
                 .ConfigureServices((_, services) =>
                 {
-                    const string httpClientName = "WfmApi";
-                    const string warframeMarketEndpoint = "https://api.warframe.market/v2/";
                     const string userAgent = $"{nameof(WarframeMarketTracker)}/{BuildInfo.AppVersion}";
 
                     // 1. Setup named HTTP Clients
-                    services.AddHttpClient(httpClientName, c =>
+                    services.AddHttpClient("WfmApi", c =>
                     {
-                        c.BaseAddress = new Uri(warframeMarketEndpoint);
+                        c.BaseAddress = new Uri("https://api.warframe.market/v2/");
                         c.DefaultRequestHeaders.UserAgent.ParseAdd(userAgent);
                         c.DefaultRequestHeaders.Accept.ParseAdd("application/json");
+                    });
+
+                    services.AddHttpClient("WfmAssets", c =>
+                    {
+                        c.BaseAddress = new Uri("https://warframe.market/static/assets/");
+                        c.DefaultRequestHeaders.UserAgent.ParseAdd(userAgent);
                     });
 
                     services.AddHttpClient("GitHub", c =>
@@ -61,43 +63,23 @@ internal static class Program
                         c.Timeout = TimeSpan.FromSeconds(5);
                     });
 
-                    // 2. Business Logic & API
-                    services.AddTransient<IWarframeMarketService>(sp =>
-                    {
-                        var factory = sp.GetRequiredService<IHttpClientFactory>();
-                        var client = factory.CreateClient(httpClientName);
-                        var logger = sp.GetRequiredService<ILogger<WarframeMarketService>>();
-                        return new WarframeMarketService(client, logger);
-                    });
-
-                    // 3. The Cache (must be a singleton or why else cache)
-                    services.AddSingleton<IItemCache>(sp =>
-                    {
-                        var factory = sp.GetRequiredService<IHttpClientFactory>();
-                        var client = factory.CreateClient(httpClientName);
-                        return new ItemCache(client);
-                    });
-
-                    // 3b. Thread-safe registry for tracked items (shared between UI and poller)
+                    // 2. Services & State
+                    services.AddTransient<IWarframeMarketService, WarframeMarketService>();
+                    services.AddSingleton<IItemCache, ItemCache>();
                     services.AddSingleton<ITrackedItemRegistry, TrackedItemRegistry>();
                     services.AddSingleton<ITrackedItemStore, TrackedItemStore>();
+                    services.AddSingleton<IThumbnailCache, ThumbnailCache>();
 
-                    // 4. Background Services
+                    // 3. Background Services
                     services.AddHostedService<ItemCacheHydrationService>();
                     services.AddHostedService<MarketPollingService>();
 
-                    // 5. Components & UI
+                    // 4. Components & UI
                     services.AddSingleton<IUserInterfaceNotificationService, UserInterfaceNotificationService>();
                     services.AddSingleton<INotificationService, NativeNotificationService>();
                     services.AddTransient<AboutWindowViewModel>();
                     services.AddSingleton<MainWindowViewModel>();
-                    services.AddSingleton<MainWindow>(sp =>
-                    {
-                        var vm = sp.GetRequiredService<MainWindowViewModel>();
-                        var window = new MainWindow { DataContext = vm };
-                        vm.Owner = window;
-                        return window;
-                    });
+                    services.AddSingleton<MainWindow>();
                 })
                 .Build();
 

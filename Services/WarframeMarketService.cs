@@ -20,9 +20,9 @@ public class WarframeMarketService : IWarframeMarketService
     private readonly HttpClient _httpClient;
     private readonly ILogger<WarframeMarketService> _logger;
 
-    public WarframeMarketService(HttpClient httpClient, ILogger<WarframeMarketService> logger)
+    public WarframeMarketService(IHttpClientFactory httpClientFactory, ILogger<WarframeMarketService> logger)
     {
-        _httpClient = httpClient;
+        _httpClient = httpClientFactory.CreateClient("WfmApi");
         _logger = logger;
     }
 

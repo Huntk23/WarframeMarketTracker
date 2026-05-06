@@ -28,7 +28,7 @@ public class ItemCache : IItemCache
 
     public int Count => Items.Count;
 
-    public ItemCache(HttpClient httpClient) => _httpClient = httpClient;
+    public ItemCache(IHttpClientFactory httpClientFactory) => _httpClient = httpClientFactory.CreateClient("WfmApi");
 
     public async Task InitializeAsync(CancellationToken ct)
     {

@@ -32,7 +32,9 @@ public partial class MainWindowViewModel : ViewModelBase
     
     public ObservableCollection<TrackedItemViewModel> TrackedItems { get; } = new();
 
-    public IEnumerable<string> AvailableItemNames => _cache.Items.Select(i => i.EnglishName);
+    public IEnumerable<ItemShort> AvailableItems => _cache.Items.OrderBy(i => i.EnglishName);
+
+    public event Action<TrackedItemViewModel>? RowAdded;
 
     public MainWindowViewModel(
         IItemCache cache,
@@ -85,7 +87,12 @@ public partial class MainWindowViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void AddRow() => TrackedItems.Add(CreateTrackedItem());
+    private void AddRow()
+    {
+        var vm = CreateTrackedItem();
+        TrackedItems.Add(vm);
+        RowAdded?.Invoke(vm);
+    }
 
     private void LoadTrackedItems()
     {

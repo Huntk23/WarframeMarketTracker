@@ -1,5 +1,8 @@
+using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Avalonia.Threading;
+using Avalonia.VisualTree;
 using WarframeMarketTracker.ViewModels;
 
 namespace WarframeMarketTracker.Views;
@@ -9,6 +12,26 @@ public partial class MainWindow : ShadUI.Window
     public MainWindow()
     {
         InitializeComponent();
+    }
+
+    public MainWindow(MainWindowViewModel viewModel) : this()
+    {
+        DataContext = viewModel;
+        viewModel.Owner = this;
+        viewModel.RowAdded += OnRowAdded;
+    }
+
+    private void OnRowAdded(TrackedItemViewModel vm)
+    {
+        // Defer until after layout so the new container has been realized
+        Dispatcher.UIThread.Post(() =>
+        {
+            var container = TrackedItemsControl.ContainerFromItem(vm);
+            container?.BringIntoView();
+
+            var autoComplete = container?.GetVisualDescendants().OfType<AutoCompleteBox>().FirstOrDefault();
+            autoComplete?.Focus();
+        }, DispatcherPriority.Loaded);
     }
 
     protected override void OnClosing(WindowClosingEventArgs e)
@@ -23,9 +46,9 @@ public partial class MainWindow : ShadUI.Window
     {
         if (sender is AutoCompleteBox box && box.DataContext is TrackedItemViewModel vm)
         {
-            // If the text in the box doesn't exactly match the selected item
-            // or any item in the source, clear it.
-            if (box.SelectedItem == null)
+            // SelectedItem is only set when the user picks from the dropdown — typed-but-not-picked names and saved-state loads leave it null.
+            // IsValid is the authoritative signal that the current text resolves to a real item, so use that to decide whether to clear.
+            if (!vm.IsValid)
             {
                 box.Text = string.Empty;
                 vm.ItemName = string.Empty;

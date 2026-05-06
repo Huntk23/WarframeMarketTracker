@@ -5,6 +5,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
 using Microsoft.Extensions.DependencyInjection;
+using WarframeMarketTracker.Controls;
 using WarframeMarketTracker.Services;
 using WarframeMarketTracker.Views;
 
@@ -37,6 +38,8 @@ public partial class App : Application
 
             var notificationService = _services.GetRequiredService<INotificationService>();
             notificationService.Initialize();
+
+            CachedImage.Initialize(_services.GetRequiredService<IThumbnailCache>());
 
             SetupTrayIcon(desktop, mainWindow);
             FixTrayMenuPosition();

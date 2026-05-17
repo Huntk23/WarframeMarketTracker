@@ -37,8 +37,12 @@ public partial class MainWindow : ShadUI.Window
     protected override void OnClosing(WindowClosingEventArgs e)
     {
         // Hide to tray instead of closing
-        e.Cancel = true;
-        Hide();
+        if (e.CloseReason == WindowCloseReason.WindowClosing)
+        {
+            e.Cancel = true;
+            Hide();
+        }
+
         base.OnClosing(e);
     }
 

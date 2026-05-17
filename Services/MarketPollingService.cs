@@ -15,7 +15,7 @@ public partial class MarketPollingService : BackgroundService
     private readonly IWarframeMarketService _api;
     private readonly ITrackedItemRegistry _registry;
     private readonly INotificationService _toast;
-    private readonly IUserInterfaceNotificationService _uiNotificationService;
+    private readonly IOfferMediatorService _offerMediator;
     private readonly ILogger<MarketPollingService> _logger;
 
     // Tracks the offer we last surfaced per slug. Used both for re-notify dedupe (only fire on a lower price) and
@@ -32,16 +32,16 @@ public partial class MarketPollingService : BackgroundService
         IWarframeMarketService api,
         ITrackedItemRegistry registry,
         INotificationService toast,
-        IUserInterfaceNotificationService uiNotificationService,
+        IOfferMediatorService offerMediator,
         ILogger<MarketPollingService> logger)
     {
         _api = api;
         _registry = registry;
         _toast = toast;
-        _uiNotificationService = uiNotificationService;
+        _offerMediator = offerMediator;
         _logger = logger;
 
-        _uiNotificationService.OrderIgnored += offer =>
+        _offerMediator.OrderIgnored += offer =>
         {
             _ignoredOrderIds.TryAdd(offer.OrderId, 0);
             // Clear so the next poll cycle treats the next-cheapest non-ignored seller as a fresh notification
@@ -106,7 +106,7 @@ public partial class MarketPollingService : BackgroundService
                                 lowestOrder.GenerateWhisper(item.ItemName));
 
                             // Surface to UI first so labels appear even if the OS toast fails
-                            _uiNotificationService.SurfaceOffer(offer);
+                            _offerMediator.SurfaceOffer(offer);
                             await _toast.ShowOfferAsync(offer);
                         }
                         else if (last!.OrderId != lowestOrder!.Id)
@@ -115,7 +115,7 @@ public partial class MarketPollingService : BackgroundService
                             LogDealCleared(item.ItemName);
 
                             _lastNotified.TryRemove(item.Slug, out _);
-                            _uiNotificationService.ClearOffer(item.Slug);
+                            _offerMediator.ClearOffer(item.Slug);
                         }
                     }
                     else if (_lastNotified.TryRemove(item.Slug, out _))
@@ -123,7 +123,7 @@ public partial class MarketPollingService : BackgroundService
                         // Either no qualifying deal exists, or the cheapest is the deal the user ignored
                         LogDealCleared(item.ItemName);
 
-                        _uiNotificationService.ClearOffer(item.Slug);
+                        _offerMediator.ClearOffer(item.Slug);
                     }
                 }
                 catch (Exception ex)

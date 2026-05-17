@@ -42,15 +42,18 @@ public class NativeNotificationService : INotificationService
     };
 
     private readonly ILogger<NativeNotificationService> _logger;
-    private readonly IUserInterfaceNotificationService _uiNotificationService;
+    private readonly IOfferMediatorService _offerMediator;
+    private readonly IDialogService _dialogService;
     private readonly Dictionary<uint, MarketOffer> _pendingOffers = new();
 
     public NativeNotificationService(
         ILogger<NativeNotificationService> logger,
-        IUserInterfaceNotificationService uiNotificationService)
+        IOfferMediatorService offerMediator,
+        IDialogService dialogService)
     {
         _logger = logger;
-        _uiNotificationService = uiNotificationService;
+        _offerMediator = offerMediator;
+        _dialogService = dialogService;
     }
 
     public void Initialize()
@@ -92,10 +95,10 @@ public class NativeNotificationService : INotificationService
         switch (e.ActionTag)
         {
             case CopyActionTag:
-                _ = _uiNotificationService.CopyWhisperAsync(offer.Whisper);
+                _ = _dialogService.CopyWhisperAsync(offer.Whisper);
                 break;
             case IgnoreActionTag:
-                _uiNotificationService.IgnoreOffer(offer);
+                _offerMediator.IgnoreOffer(offer);
                 break;
             default:
                 var url = $"https://warframe.market/items/{offer.Slug}?type=sell";

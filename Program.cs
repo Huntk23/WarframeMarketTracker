@@ -75,7 +75,7 @@ internal static class Program
                     services.AddHostedService<MarketPollingService>();
 
                     // 4. Components & UI
-                    services.AddSingleton<IUserInterfaceNotificationService, UserInterfaceNotificationService>();
+                    services.AddSingleton<IOfferMediatorService, OfferMediatorService>();
                     services.AddSingleton<INotificationService, NativeNotificationService>();
                     services.AddSingleton<IDialogService, DialogService>();
                     services.AddTransient<AboutWindowViewModel>();

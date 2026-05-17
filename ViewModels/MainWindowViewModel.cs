@@ -16,7 +16,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly IItemCache _cache;
     private readonly ITrackedItemRegistry _registry;
     private readonly ITrackedItemStore _store;
-    private readonly IUserInterfaceNotificationService _uiNotificationService;
+    private readonly IOfferMediatorService _offerMediator;
     private readonly IDialogService _dialogService;
     private bool _isLoading;
 
@@ -38,18 +38,18 @@ public partial class MainWindowViewModel : ViewModelBase
         IItemCache cache,
         ITrackedItemRegistry registry,
         ITrackedItemStore store,
-        IUserInterfaceNotificationService uiNotificationService,
+        IOfferMediatorService offerMediator,
         IDialogService dialogService)
     {
         _cache = cache;
         _registry = registry;
         _store = store;
-        _uiNotificationService = uiNotificationService;
+        _offerMediator = offerMediator;
         _dialogService = dialogService;
 
         TrackedItems.CollectionChanged += OnTrackedItemsChanged;
-        _uiNotificationService.OfferAvailable += OnOfferAvailable;
-        _uiNotificationService.OfferCleared += OnOfferCleared;
+        _offerMediator.OfferAvailable += OnOfferAvailable;
+        _offerMediator.OfferCleared += OnOfferCleared;
         LoadTrackedItems();
     }
 
@@ -107,7 +107,7 @@ public partial class MainWindowViewModel : ViewModelBase
     
     private TrackedItemViewModel CreateTrackedItem()
     {
-        var vm = new TrackedItemViewModel(_cache, _registry, _uiNotificationService, item => TrackedItems.Remove(item));
+        var vm = new TrackedItemViewModel(_cache, _registry, _offerMediator, _dialogService, item => TrackedItems.Remove(item));
         vm.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName != null && PersistedProperties.Contains(e.PropertyName))

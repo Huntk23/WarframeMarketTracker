@@ -11,7 +11,8 @@ public partial class TrackedItemViewModel : ViewModelBase
 {
     private readonly IItemCache _cache;
     private readonly ITrackedItemRegistry _registry;
-    private readonly IUserInterfaceNotificationService _uiNotificationService;
+    private readonly IOfferMediatorService _offerMediator;
+    private readonly IDialogService _dialogService;
     private readonly Action<TrackedItemViewModel> _removeCallback;
     private ItemShort? _resolvedItem;
     private string? _registeredKey;
@@ -48,12 +49,14 @@ public partial class TrackedItemViewModel : ViewModelBase
     public TrackedItemViewModel(
         IItemCache cache,
         ITrackedItemRegistry registry,
-        IUserInterfaceNotificationService uiNotificationService,
+        IOfferMediatorService offerMediator,
+        IDialogService dialogService,
         Action<TrackedItemViewModel> removeCallback)
     {
         _cache = cache;
         _registry = registry;
-        _uiNotificationService = uiNotificationService;
+        _offerMediator = offerMediator;
+        _dialogService = dialogService;
         _removeCallback = removeCallback;
     }
 
@@ -72,14 +75,14 @@ public partial class TrackedItemViewModel : ViewModelBase
     private async Task CopyWhisper()
     {
         if (BestOffer is null) return;
-        await _uiNotificationService.CopyWhisperAsync(BestOffer.Whisper);
+        await _dialogService.CopyWhisperAsync(BestOffer.Whisper);
     }
 
     [RelayCommand]
     private void IgnoreOffer()
     {
         if (BestOffer is null) return;
-        _uiNotificationService.IgnoreOffer(BestOffer);
+        _offerMediator.IgnoreOffer(BestOffer);
     }
 
     partial void OnItemNameChanged(string value)

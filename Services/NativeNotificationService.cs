@@ -1,5 +1,5 @@
 using System;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
@@ -44,7 +44,7 @@ public class NativeNotificationService : INotificationService
     private readonly ILogger<NativeNotificationService> _logger;
     private readonly IOfferMediatorService _offerMediator;
     private readonly IDialogService _dialogService;
-    private readonly Dictionary<uint, MarketOffer> _pendingOffers = new();
+    private readonly ConcurrentDictionary<uint, MarketOffer> _pendingOffers = new();
 
     public NativeNotificationService(
         ILogger<NativeNotificationService> logger,
@@ -87,10 +87,8 @@ public class NativeNotificationService : INotificationService
 
     private void OnNotificationCompleted(object? sender, NativeNotificationCompletedEventArgs e)
     {
-        if (!e.NotificationId.HasValue || !_pendingOffers.TryGetValue(e.NotificationId.Value, out var offer))
+        if (!e.NotificationId.HasValue || !_pendingOffers.TryRemove(e.NotificationId.Value, out var offer))
             return;
-
-        _pendingOffers.Remove(e.NotificationId.Value);
 
         switch (e.ActionTag)
         {

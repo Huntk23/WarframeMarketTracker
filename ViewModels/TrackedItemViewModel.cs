@@ -16,6 +16,9 @@ public partial class TrackedItemViewModel : ViewModelBase
     private readonly Action<TrackedItemViewModel> _removeCallback;
     private ItemShort? _resolvedItem;
     private string? _registeredKey;
+    private bool _isApplyingItemName;
+
+    public event Action? Modified;
 
     [ObservableProperty]
     public partial string ItemName { get; set; } = string.Empty;
@@ -87,35 +90,47 @@ public partial class TrackedItemViewModel : ViewModelBase
 
     partial void OnItemNameChanged(string value)
     {
-        UnregisterIfNeeded();
-        BestOffer = null;
-
-        _cache.TryGetByName(value, out _resolvedItem);
-
-        IsValid = _resolvedItem != null;
-        MarketUrl = _resolvedItem != null
-            ? new Uri($"https://warframe.market/items/{_resolvedItem.Slug}?type=sell")
-            : null;
-
-        if (_resolvedItem != null)
+        _isApplyingItemName = true;
+        try
         {
-            MaxRank = _resolvedItem.MaxRank;
-            HasRanks = _resolvedItem.MaxRank is > 0;
-            TargetRank = HasRanks ? MaxRank : null;
+            UnregisterIfNeeded();
+            BestOffer = null;
+
+            _cache.TryGetByName(value, out _resolvedItem);
+
+            IsValid = _resolvedItem != null;
+            MarketUrl = _resolvedItem != null
+                ? new Uri($"https://warframe.market/items/{_resolvedItem.Slug}?type=sell")
+                : null;
+
+            if (_resolvedItem != null)
+            {
+                MaxRank = _resolvedItem.MaxRank;
+                HasRanks = _resolvedItem.MaxRank is > 0;
+                TargetRank = HasRanks ? MaxRank : null;
+            }
+            else
+            {
+                MaxRank = null;
+                HasRanks = false;
+                TargetRank = null;
+            }
+
+            if (!IsValid) IsEnabled = false;
+            else if (IsEnabled) RegisterEntry();
         }
-        else
+        finally
         {
-            MaxRank = null;
-            HasRanks = false;
-            TargetRank = null;
+            _isApplyingItemName = false;
         }
 
-        if (!IsValid) IsEnabled = false;
-        else if (IsEnabled) RegisterEntry();
+        Modified?.Invoke();
     }
 
     partial void OnIsEnabledChanged(bool value)
     {
+        if (_isApplyingItemName) return;
+
         if (value && IsValid)
         {
             RegisterEntry();
@@ -125,18 +140,28 @@ public partial class TrackedItemViewModel : ViewModelBase
             UnregisterIfNeeded();
             BestOffer = null;
         }
+
+        Modified?.Invoke();
     }
 
     partial void OnTargetPlatinumChanged(int value)
     {
+        if (_isApplyingItemName) return;
+
         BestOffer = null;
         if (IsEnabled && IsValid) RegisterEntry();
+
+        Modified?.Invoke();
     }
 
     partial void OnTargetRankChanged(int? value)
     {
+        if (_isApplyingItemName) return;
+
         BestOffer = null;
         if (IsEnabled && IsValid) RegisterEntry();
+
+        Modified?.Invoke();
     }
 
     private void RegisterEntry()

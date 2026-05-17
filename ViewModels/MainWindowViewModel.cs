@@ -20,14 +20,6 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly IDialogService _dialogService;
     private bool _isLoading;
 
-    private static readonly HashSet<string> PersistedProperties =
-    [
-        nameof(TrackedItemViewModel.ItemName),
-        nameof(TrackedItemViewModel.TargetPlatinum),
-        nameof(TrackedItemViewModel.TargetRank),
-        nameof(TrackedItemViewModel.IsEnabled),
-    ];
-    
     public ObservableCollection<TrackedItemViewModel> TrackedItems { get; } = new();
 
     public IReadOnlyList<ItemShort> AvailableItems => _cache.Items;
@@ -108,11 +100,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private TrackedItemViewModel CreateTrackedItem()
     {
         var vm = new TrackedItemViewModel(_cache, _registry, _offerMediator, _dialogService, item => TrackedItems.Remove(item));
-        vm.PropertyChanged += (_, e) =>
-        {
-            if (e.PropertyName != null && PersistedProperties.Contains(e.PropertyName))
-                SaveTrackedItems();
-        };
+        vm.Modified += SaveTrackedItems;
         return vm;
     }
 

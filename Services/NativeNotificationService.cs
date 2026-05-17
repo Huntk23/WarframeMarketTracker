@@ -99,8 +99,7 @@ public class NativeNotificationService : INotificationService
                 _offerMediator.IgnoreOffer(offer);
                 break;
             default:
-                var url = $"https://warframe.market/items/{offer.Slug}?type=sell";
-                OpenUrl(url);
+                OpenUrl(MarketUrls.SaleLink(offer.Slug).ToString());
                 _logger.LogInformation("Opened sale page for {Slug}.", offer.Slug);
                 break;
         }

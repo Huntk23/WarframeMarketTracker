@@ -100,7 +100,7 @@ public partial class TrackedItemViewModel : ViewModelBase
 
             IsValid = _resolvedItem != null;
             MarketUrl = _resolvedItem != null
-                ? new Uri($"https://warframe.market/items/{_resolvedItem.Slug}?type=sell")
+                ? MarketUrls.SaleLink(_resolvedItem.Slug)
                 : null;
 
             if (_resolvedItem != null)

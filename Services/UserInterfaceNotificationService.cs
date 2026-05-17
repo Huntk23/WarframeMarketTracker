@@ -13,11 +13,11 @@ public interface IUserInterfaceNotificationService
 {
     void SurfaceOffer(MarketOffer offer);
     void ClearOffer(string slug);
-    void IgnoreOffer(string orderId);
+    void IgnoreOffer(MarketOffer offer);
     Task CopyWhisperAsync(string whisper);
     event Action<MarketOffer>? OfferAvailable;
     event Action<string>? OfferCleared;
-    event Action<string>? OrderIgnored;
+    event Action<MarketOffer>? OrderIgnored;
 }
 
 public class UserInterfaceNotificationService : IUserInterfaceNotificationService
@@ -26,7 +26,7 @@ public class UserInterfaceNotificationService : IUserInterfaceNotificationServic
 
     public event Action<MarketOffer>? OfferAvailable;
     public event Action<string>? OfferCleared;
-    public event Action<string>? OrderIgnored;
+    public event Action<MarketOffer>? OrderIgnored;
 
     public UserInterfaceNotificationService(ILogger<UserInterfaceNotificationService> logger)
     {
@@ -41,10 +41,11 @@ public class UserInterfaceNotificationService : IUserInterfaceNotificationServic
         OfferCleared?.Invoke(slug);
     }
 
-    public void IgnoreOffer(string orderId)
+    public void IgnoreOffer(MarketOffer offer)
     {
-        _logger.LogInformation("User ignored order {OrderId}.", orderId);
-        OrderIgnored?.Invoke(orderId);
+        _logger.LogInformation("User ignored order {OrderId} for {Slug}.", offer.OrderId, offer.Slug);
+        OrderIgnored?.Invoke(offer);
+        OfferCleared?.Invoke(offer.Slug);
     }
 
     public async Task CopyWhisperAsync(string whisper)

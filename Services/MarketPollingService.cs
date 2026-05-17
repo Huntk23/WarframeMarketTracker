@@ -19,11 +19,11 @@ public partial class MarketPollingService : BackgroundService
     private readonly ILogger<MarketPollingService> _logger;
 
     // Tracks the offer we last surfaced per slug. Used both for re-notify dedupe (only fire on a lower price) and
-    // for clearing the UI label when that specific deal disappears (seller offline / item sold).
-    private readonly Dictionary<string, NotifiedOffer> _lastNotified = new();
+    // for clearing the UI label when that specific deal disappears (seller offline / item sold)
+    private readonly ConcurrentDictionary<string, NotifiedOffer> _lastNotified = new();
 
     // Orders the user chose to ignore for this session. Concurrent because OrderIgnored fires on the UI thread while
-    // the poll loop reads from a background thread.
+    // the poll loop reads from a background thread
     private readonly ConcurrentDictionary<string, byte> _ignoredOrderIds = new();
 
     private sealed record NotifiedOffer(string OrderId, int Platinum);
@@ -41,7 +41,13 @@ public partial class MarketPollingService : BackgroundService
         _uiNotificationService = uiNotificationService;
         _logger = logger;
 
-        _uiNotificationService.OrderIgnored += orderId => _ignoredOrderIds.TryAdd(orderId, 0);
+        _uiNotificationService.OrderIgnored += offer =>
+        {
+            _ignoredOrderIds.TryAdd(offer.OrderId, 0);
+            // Clear so the next poll cycle treats the next-cheapest non-ignored seller as a fresh notification
+            // instead of deduping against the just-ignored order's price
+            _lastNotified.TryRemove(offer.Slug, out _);
+        };
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -53,11 +59,11 @@ public partial class MarketPollingService : BackgroundService
 
         while (!stoppingToken.IsCancellationRequested)
         {
-            var activeItems = _registry.GetActiveItems();
-
             // Wait before each poll cycle
             await Task.Delay(TimeSpan.FromSeconds(15), stoppingToken);
 
+            var activeItems = _registry.GetActiveItems();
+            
             if (activeItems.Count == 0)
             {
                 _logger.LogDebug("No active items tracking. Skipping poll cycle.");
@@ -74,11 +80,12 @@ public partial class MarketPollingService : BackgroundService
                     if (item.TargetRank.HasValue)
                         orders = orders.Where(o => o.Rank == item.TargetRank.Value).ToList();
 
-                    var lowestOrder = orders.FirstOrDefault();
+                    // Skip orders the user has explicitly ignored this session. Filter before picking the lowest so equally priced
+                    // (or higher but still-qualifying) non-ignored sellers aren't hidden behind an ignored cheaper order
+                    var lowestOrder = orders.FirstOrDefault(o => !_ignoredOrderIds.ContainsKey(o.Id));
                     var hasDeal = lowestOrder != null && lowestOrder.Platinum <= item.TargetPlatinum;
-                    var isIgnored = hasDeal && _ignoredOrderIds.ContainsKey(lowestOrder!.Id);
 
-                    if (hasDeal && !isIgnored)
+                    if (hasDeal)
                     {
                         var hadNotified = _lastNotified.TryGetValue(item.Slug, out var last);
                         var isNewLowerPrice = !hadNotified || lowestOrder!.Platinum < last!.Platinum;
@@ -104,16 +111,16 @@ public partial class MarketPollingService : BackgroundService
                         }
                         else if (last!.OrderId != lowestOrder!.Id)
                         {
-                            // Same/higher price than last notification, but a different seller is now cheapest - the original deal is gone.
+                            // Same/higher price than last notification, but a different seller is now cheapest - the original deal is gone
                             LogDealCleared(item.ItemName);
 
-                            _lastNotified.Remove(item.Slug);
+                            _lastNotified.TryRemove(item.Slug, out _);
                             _uiNotificationService.ClearOffer(item.Slug);
                         }
                     }
-                    else if (_lastNotified.Remove(item.Slug))
+                    else if (_lastNotified.TryRemove(item.Slug, out _))
                     {
-                        // Either no qualifying deal exists, or the cheapest is the deal the user ignored.
+                        // Either no qualifying deal exists, or the cheapest is the deal the user ignored
                         LogDealCleared(item.ItemName);
 
                         _uiNotificationService.ClearOffer(item.Slug);

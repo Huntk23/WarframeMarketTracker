@@ -79,8 +79,7 @@ public partial class TrackedItemViewModel : ViewModelBase
     private void IgnoreOffer()
     {
         if (BestOffer is null) return;
-        _uiNotificationService.IgnoreOffer(BestOffer.OrderId);
-        BestOffer = null;
+        _uiNotificationService.IgnoreOffer(BestOffer);
     }
 
     partial void OnItemNameChanged(string value)

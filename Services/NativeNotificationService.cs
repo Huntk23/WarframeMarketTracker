@@ -95,7 +95,7 @@ public class NativeNotificationService : INotificationService
                 _ = _uiNotificationService.CopyWhisperAsync(offer.Whisper);
                 break;
             case IgnoreActionTag:
-                _uiNotificationService.IgnoreOffer(offer.OrderId);
+                _uiNotificationService.IgnoreOffer(offer);
                 break;
             default:
                 var url = $"https://warframe.market/items/{offer.Slug}?type=sell";

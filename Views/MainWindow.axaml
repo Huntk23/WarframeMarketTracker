@@ -73,7 +73,7 @@
                                                      Text="{Binding ItemName, Mode=TwoWay}"
                                                      ItemsSource="{Binding $parent[shadui:Window].((vm:MainWindowViewModel)DataContext).AvailableItems}"
                                                      ValueMemberBinding="{Binding EnglishName, x:DataType=m:ItemShort}"
-                                                     Watermark="e.g. Nova Prime Set"
+                                                     PlaceholderText="e.g. Nova Prime Set"
                                                      FilterMode="Contains"
                                                      LostFocus="AutoCompleteBox_OnLostFocus"
                                                      Margin="0,0,15,0">
